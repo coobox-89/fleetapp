@@ -28,7 +28,7 @@
 
 <script>
   function fetchCarQueryJSONP(cmd, params = {}) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const callbackName = `carQueryCallback_${cmd}_${Date.now()}`;
       window[callbackName] = function (data) {
         resolve(data);
@@ -44,7 +44,6 @@
 
       const script = document.createElement("script");
       script.src = `https://www.carqueryapi.com/api/0.3/?${queryParams.toString()}`;
-      script.onerror = reject;
       document.body.appendChild(script);
     });
   }
@@ -53,26 +52,35 @@
     const data = await fetchCarQueryJSONP('getMakes', { sold_in_us: 0 });
     const brandSelect = document.getElementById('templateBrand');
     brandSelect.innerHTML = '<option value="">-- Seleziona Marca --</option>' +
-      data.Makes.map(make => `<option value="${make.make_name}">${make.make_display}</option>`).join('');
+      data.Makes.map(make =>
+        `<option value="${make.make_name}">${make.make_display}</option>`
+      ).join('');
   }
 
   async function populateModels(brand) {
     const data = await fetchCarQueryJSONP('getModels', { make: brand });
     const modelSelect = document.getElementById('templateModel');
     modelSelect.innerHTML = '<option value="">-- Seleziona Modello --</option>' +
-      data.Models.map(model => `<option value="${model.model_name}">${model.model_name}</option>`).join('');
+      data.Models.map(model =>
+        `<option value="${model.model_name}">${model.model_name}</option>`
+      ).join('');
   }
 
   async function populateTrims(brand, model) {
-    const data = await fetchCarQueryJSONP('getTrims', { make: brand, model });
+    const data = await fetchCarQueryJSONP('getTrims', {
+      make: brand,
+      model: model
+    });
     const trimSelect = document.getElementById('templateTrim');
     trimSelect.innerHTML = '<option value="">-- Seleziona Versione --</option>' +
-      data.Trims.map(trim => `<option value='${JSON.stringify(trim)}'>${trim.model_trim || 'Standard'} - ${trim.model_year}</option>`).join('');
+      data.Trims.map(trim =>
+        `<option value='${JSON.stringify(trim)}'>${trim.model_trim || 'Standard'} - ${trim.model_year}</option>`
+      ).join('');
   }
 
   function autoFillForm(trimJSON) {
     const trim = JSON.parse(trimJSON);
-    document.querySelector('input[name=brand]').value = trim.make_display || trim.model_make_id;
+    document.querySelector('input[name=brand]').value = trim.make_display;
     document.querySelector('input[name=model]').value = trim.model_name;
     document.querySelector('input[name=year]').value = trim.model_year;
     document.querySelector('input[name=fuel_type]').value = trim.model_engine_fuel;
@@ -84,24 +92,26 @@
   document.addEventListener('DOMContentLoaded', () => {
     populateBrands();
 
-    document.getElementById('templateBrand').addEventListener('change', e => {
+    document.getElementById('templateBrand').addEventListener('change', (e) => {
       const brand = e.target.value;
-      document.getElementById('templateModel').innerHTML = '<option>Caricamento...</option>';
-      if (brand) populateModels(brand);
+      if (brand) {
+        populateModels(brand);
+        document.getElementById('templateTrim').innerHTML = '<option value="">-- Seleziona Versione --</option>';
+      }
     });
 
-    document.getElementById('templateModel').addEventListener('change', e => {
-      const brand = document.getElementById('templateBrand').value;
+    document.getElementById('templateModel').addEventListener('change', (e) => {
       const model = e.target.value;
-      document.getElementById('templateTrim').innerHTML = '<option>Caricamento...</option>';
+      const brand = document.getElementById('templateBrand').value;
       if (brand && model) populateTrims(brand, model);
     });
 
-    document.getElementById('templateTrim').addEventListener('change', e => {
+    document.getElementById('templateTrim').addEventListener('change', (e) => {
       if (e.target.value) autoFillForm(e.target.value);
     });
   });
 </script>
+
 
 
 
