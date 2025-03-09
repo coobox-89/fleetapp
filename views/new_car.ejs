@@ -59,25 +59,16 @@
 
   async function populateModels(brand) {
   const data = await fetchCarQueryJSONP('getModels', { make: brand });
+  console.log("Modelli caricati:", data.Models); // per debug
   const modelSelect = document.getElementById('templateModel');
-  modelSelect.innerHTML = '<option value="">-- Seleziona Modello --</option>';
-
-  if (data.Models && Array.isArray(data.Models)) {
-    data.Models.forEach(model => {
-      if (model.model_name) {
-        const option = document.createElement("option");
-        option.value = model.model_name;
-        option.textContent = model.model_name;
-        modelSelect.appendChild(option);
-      }
-    });
-  } else {
-    console.warn("⚠️ Nessun modello trovato per la marca selezionata");
-  }
-
-  // Reset anche i trim
-  document.getElementById('templateTrim').innerHTML = '<option value="">-- Seleziona Versione --</option>';
+  modelSelect.innerHTML = '<option value="">-- Seleziona Modello --</option>' +
+    data.Models
+      .filter(model => model.model_name) // <-- evita undefined/null
+      .map(model => `<option value="${model.model_name}">${model.model_name}</option>`)
+      .join('');
 }
+
+
 
 
   async function populateTrims(brand, model) {
