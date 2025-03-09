@@ -27,7 +27,7 @@
 
 <script>
   function fetchCarQueryJSONP(cmd, params = {}) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const callbackName = `carQueryCallback_${cmd}_${Date.now()}`;
       window[callbackName] = function (data) {
         resolve(data);
@@ -43,6 +43,7 @@
 
       const script = document.createElement("script");
       script.src = `https://www.carqueryapi.com/api/0.3/?${queryParams.toString()}`;
+      script.onerror = reject;
       document.body.appendChild(script);
     });
   }
@@ -55,7 +56,8 @@
   }
 
   async function populateModels(brand) {
-    const data = await fetchCarQueryJSONP('getModels', { make: brand, sold_in_us: 0 });
+    const data = await fetchCarQueryJSONP('getModels', { make: brand });
+    console.log("▶️ Modelli ricevuti:", data);
     const modelSelect = document.getElementById('templateModel');
     modelSelect.innerHTML = '<option value="">-- Seleziona Modello --</option>' +
       data.Models.map(model => `<option value="${model.model_name}">${model.model_name}</option>`).join('');
@@ -70,7 +72,7 @@
 
   function autoFillForm(trimJSON) {
     const trim = JSON.parse(trimJSON);
-    document.querySelector('input[name=brand]').value = trim.make_display;
+    document.querySelector('input[name=brand]').value = trim.make_display || trim.model_make_id;
     document.querySelector('input[name=model]').value = trim.model_name;
     document.querySelector('input[name=year]').value = trim.model_year;
     document.querySelector('input[name=fuel_type]').value = trim.model_engine_fuel;
@@ -98,6 +100,7 @@
     });
   });
 </script>
+
 
 
 
