@@ -1,0 +1,300 @@
+<%- include('partials/header', { title: "Nuova Auto", user: user }) %>
+<div class="max-w-3xl mx-auto mt-10 px-4">
+  <h1 class="text-3xl mb-6">Aggiungi Nuova Auto</h1>
+  <% if (error) { %>
+    <div class="bg-red-500 p-2 mb-4"><%= error %></div>
+  <% } %>
+  <form action="/cars/new" method="POST" enctype="multipart/form-data" class="space-y-8">
+
+<!-- AGGIUNTA ALL'INIZIO DEL FORM -->
+<section class="mb-6">
+  <h2 class="text-2xl font-bold mb-4 border-b border-gray-600 pb-2">Seleziona Template Auto</h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <label>Marca <i class="fa-solid fa-circle-info text-xs text-gray-400 ml-1" title="Importa da database CarQuery API"></i></label>
+      <select id="templateBrand" class="w-full p-2 bg-gray-800 border border-gray-600 text-white"></select>
+    </div>
+    <div>
+      <label>Modello</label>
+      <select id="templateModel" class="w-full p-2 bg-gray-800 border border-gray-600 text-white"></select>
+    </div>
+    <div>
+      <label>Versione</label>
+      <select id="templateTrim" class="w-full p-2 bg-gray-800 border border-gray-600 text-white"></select>
+    </div>
+  </div>
+</section>
+
+<script>
+  function fetchCarQueryJSONP(cmd, params = {}) {
+    return new Promise((resolve) => {
+      const callbackName = `carQueryCallback_${cmd}_${Date.now()}`;
+      window[callbackName] = function (data) {
+        resolve(data);
+        delete window[callbackName];
+        script.remove();
+      };
+
+      const queryParams = new URLSearchParams({
+        cmd,
+        callback: callbackName,
+        ...params
+      });
+
+      const script = document.createElement("script");
+      script.src = `https://www.carqueryapi.com/api/0.3/?${queryParams.toString()}`;
+      document.body.appendChild(script);
+    });
+  }
+
+  async function populateBrands() {
+    const data = await fetchCarQueryJSONP('getMakes', { sold_in_us: 0 });
+    const brandSelect = document.getElementById('templateBrand');
+    brandSelect.innerHTML = '<option value="">-- Seleziona Marca --</option>' +
+      data.Makes.map(make => `<option value="${make.make_name}">${make.make_display}</option>`).join('');
+  }
+
+  async function populateModels(brand) {
+    const data = await fetchCarQueryJSONP('getModels', { make: brand });
+    const modelSelect = document.getElementById('templateModel');
+    modelSelect.innerHTML = '<option value="">-- Seleziona Modello --</option>' +
+      data.Models.map(model => `<option value="${model.model_name}">${model.model_name}</option>`).join('');
+  }
+
+  async function populateTrims(brand, model) {
+    const data = await fetchCarQueryJSONP('getTrims', { make: brand, model });
+    const trimSelect = document.getElementById('templateTrim');
+    trimSelect.innerHTML = '<option value="">-- Seleziona Versione --</option>' +
+      data.Trims.map(trim => `<option value='${JSON.stringify(trim)}'>${trim.model_trim || 'Standard'} - ${trim.model_year}</option>`).join('');
+  }
+
+  function autoFillForm(trimJSON) {
+    const trim = JSON.parse(trimJSON);
+    document.querySelector('input[name=brand]').value = trim.make_display;
+    document.querySelector('input[name=model]').value = trim.model_name;
+    document.querySelector('input[name=year]').value = trim.model_year;
+    document.querySelector('input[name=fuel_type]').value = trim.model_engine_fuel;
+    document.querySelector('input[name=engine_capacity]').value = trim.model_engine_cc;
+    document.querySelector('input[name=horsepower]').value = trim.model_engine_power_ps;
+    document.querySelector('input[name=transmission]').value = trim.model_transmission_type;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    populateBrands();
+
+    document.getElementById('templateBrand').addEventListener('change', e => {
+      const brand = e.target.value;
+      if (brand) populateModels(brand);
+    });
+
+    document.getElementById('templateModel').addEventListener('change', e => {
+      const brand = document.getElementById('templateBrand').value;
+      const model = e.target.value;
+      if (brand && model) populateTrims(brand, model);
+    });
+
+    document.getElementById('templateTrim').addEventListener('change', e => {
+      if (e.target.value) autoFillForm(e.target.value);
+    });
+  });
+</script>
+
+
+
+    
+
+    <!-- Sezione 1: Informazioni Base -->
+    <section>
+      <h2 class="text-2xl font-bold mb-4 border-b border-gray-600 pb-2">Informazioni Base</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label>Marca</label>
+          <input type="text" name="brand" class="w-full p-2 bg-gray-800 border border-gray-600" required>
+        </div>
+        <div>
+          <label>Modello</label>
+          <input type="text" name="model" class="w-full p-2 bg-gray-800 border border-gray-600" required>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div>
+          <label>Anno</label>
+          <input type="number" name="year" class="w-full p-2 bg-gray-800 border border-gray-600" required>
+        </div>
+        <div>
+          <label>Targa</label>
+          <input type="text" name="license_plate" class="w-full p-2 bg-gray-800 border border-gray-600" required>
+        </div>
+        <div>
+          <label>Immagini auto</label>
+          <div>
+            <!-- Il file input è nascosto e viene attivato dal label -->
+            <label for="images" class="btn inline-block cursor-pointer">Scegli File</label>
+            <input id="images" type="file" name="images" class="hidden" multiple>
+          </div>
+          <!-- Carosello preview -->
+          <div id="previewCarousel" class="mt-4 hidden relative">
+            <button id="prevBtn" class="absolute left-0 top-1/2 transform -translate-y-1/2 text-white text-3xl focus:outline-none" style="background: transparent;">&#10094;</button>
+            <img id="previewImage" src="#" alt="Anteprima immagine" class="w-32 h-32 object-contain rounded border border-gray-600 mx-auto">
+            <button id="nextBtn" class="absolute right-0 top-1/2 transform -translate-y-1/2 text-white text-3xl focus:outline-none" style="background: transparent;">&#10095;</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sezione 2: Dettagli Tecnici -->
+    <section>
+      <h2 class="text-2xl font-bold mb-4 border-b border-gray-600 pb-2">Dettagli Tecnici</h2>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label>Tipo di carburante</label>
+          <input type="text" name="fuel_type" class="w-full p-2 bg-gray-800 border border-gray-600">
+        </div>
+        <div>
+          <label>Cilindrata</label>
+          <input type="text" name="engine_capacity" class="w-full p-2 bg-gray-800 border border-gray-600">
+        </div>
+        <div>
+          <label>Potenza (HP)</label>
+          <input type="text" name="horsepower" class="w-full p-2 bg-gray-800 border border-gray-600">
+        </div>
+        <div>
+          <label>Trasmissione</label>
+          <input type="text" name="transmission" class="w-full p-2 bg-gray-800 border border-gray-600">
+        </div>
+      </div>
+    </section>
+
+    <!-- Sezione 3: Stato, Utilizzo e Contratto -->
+    <section>
+      <h2 class="text-2xl font-bold mb-4 border-b border-gray-600 pb-2">Stato, Utilizzo e Contratto</h2>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label>Stato attuale</label>
+          <input type="text" name="status" class="w-full p-2 bg-gray-800 border border-gray-600">
+        </div>
+        <div>
+          <label>Manutenzione</label>
+          <input type="date" name="last_maintenance_date" class="w-full p-2 bg-gray-800 border border-gray-600">
+        </div>
+        <div>
+          <label>Chilometraggio</label>
+          <input type="number" name="mileage" class="w-full p-2 bg-gray-800 border border-gray-600">
+        </div>
+        <div>
+          <label>Colore</label>
+          <input type="text" name="color" class="w-full p-2 bg-gray-800 border border-gray-600">
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <div>
+          <label>Inizio contratto</label>
+          <input type="date" name="contract_start_date" class="w-full p-2 bg-gray-800 border border-gray-600">
+        </div>
+        <div>
+          <label>Scadenza contratto</label>
+          <input type="date" name="contract_end_date" class="w-full p-2 bg-gray-800 border border-gray-600">
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <div>
+          <label>Costo mensile</label>
+          <input type="text" name="monthly_cost" class="w-full p-2 bg-gray-800 border border-gray-600">
+        </div>
+        <div>
+          <label>Costo annuo</label>
+          <input type="text" name="annual_cost" class="w-full p-2 bg-gray-800 border border-gray-600">
+        </div>
+      </div>
+    </section>
+
+    <!-- Sezione 4: Assicurazione e Documentazione -->
+    <section>
+      <h2 class="text-2xl font-bold mb-4 border-b border-gray-600 pb-2">Assicurazione e Documentazione</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label>Scadenza assicurazione</label>
+          <input type="date" name="insurance_expiry_date" class="w-full p-2 bg-gray-800 border border-gray-600">
+        </div>
+        <div>
+          <label>Numero polizza assicurativa</label>
+          <input type="text" name="insurance_policy_number" class="w-full p-2 bg-gray-800 border border-gray-600">
+        </div>
+        <div>
+          <label>Revisione veicolo</label>
+          <input type="date" name="inspection_date" class="w-full p-2 bg-gray-800 border border-gray-600">
+        </div>
+      </div>
+    </section>
+
+    <!-- Sezione 5: Informazioni Aggiuntive -->
+    <section>
+      <h2 class="text-2xl font-bold mb-4 border-b border-gray-600 pb-2">Informazioni Aggiuntive</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label>Assegnato a</label>
+          <input type="text" name="assigned_driver" class="w-full p-2 bg-gray-800 border border-gray-600">
+        </div>
+        <div>
+          <label>Leasing Vendor</label>
+          <select name="leasing_vendor_id" class="w-full p-2 bg-gray-800 border border-gray-600">
+            <option value="">-- Seleziona --</option>
+            <% if (vendors && vendors.length > 0) { %>
+              <% vendors.forEach(vendor => { %>
+                <option value="<%= vendor.id %>"><%= vendor.name %></option>
+              <% }) %>
+            <% } %>
+          </select>
+        </div>
+      </div>
+      <div class="mt-4">
+        <label>Note aggiuntive</label>
+        <textarea name="additional_notes" class="w-full p-2 bg-gray-800 border border-gray-600"></textarea>
+      </div>
+    </section>
+
+    <!-- Pulsanti: Salva e Indietro -->
+    <div class="flex justify-between">
+      <button type="submit" class="btn px-4 py-2">Salva</button>
+      <a href="/dashboard" class="btn px-4 py-2">Indietro</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Gestione preview multipla con carosello
+  const imagesInput = document.getElementById('images');
+  const previewCarousel = document.getElementById('previewCarousel');
+  const previewImage = document.getElementById('previewImage');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  let previewFiles = [];
+  let currentIndex = 0;
+
+  imagesInput.addEventListener('change', function() {
+    previewFiles = Array.from(this.files);
+    if (previewFiles.length > 0) {
+      currentIndex = 0;
+      previewImage.src = URL.createObjectURL(previewFiles[currentIndex]);
+      previewCarousel.classList.remove('hidden');
+    } else {
+      previewCarousel.classList.add('hidden');
+    }
+  });
+
+  prevBtn.addEventListener('click', function() {
+    if (previewFiles.length > 0) {
+      currentIndex = (currentIndex - 1 + previewFiles.length) % previewFiles.length;
+      previewImage.src = URL.createObjectURL(previewFiles[currentIndex]);
+    }
+  });
+
+  nextBtn.addEventListener('click', function() {
+    if (previewFiles.length > 0) {
+      currentIndex = (currentIndex + 1) % previewFiles.length;
+      previewImage.src = URL.createObjectURL(previewFiles[currentIndex]);
+    }
+  });
+</script>
+
+<%- include('partials/footer') %>

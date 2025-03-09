@@ -1,0 +1,301 @@
+<%- include('partials/header', { title: "Il mio parco", user: user }) %>
+<div class="max-w-7xl mx-auto p-4">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold">Il mio parco</h1>
+    <div class="relative w-full max-w-xs">
+      <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+        <i class="fa fa-search"></i>
+      </span>
+      <input
+        type="text"
+        id="search-input"
+        placeholder="Cerca per marca, modello, driver o stato"
+        class="pl-10 pr-4 py-2 rounded bg-gray-700 text-white placeholder-gray-400 border border-gray-600 focus:outline-none w-full"
+        style="box-shadow: none;"
+        onfocus="this.style.boxShadow='0 0 0 3px #66ee66';"
+        onblur="this.style.boxShadow='none';"
+      />
+    </div>
+    
+    
+    <div class="flex space-x-2">
+      <a href="/cars/new" class="btn px-4 py-2"><i class="fa-solid fa-plus mr-2"></i>Nuova Auto</a>
+      <a href="/cars/import" class="btn px-4 py-2"><i class="fa-solid fa-file-csv mr-2"></i>Importa Auto</a>
+      <a href="/cars/all" class="btn px-4 py-2"><i class="fa-solid fa-list mr-2"></i>Visualizza tutte</a>
+    </div>
+  </div>
+
+  <!-- Lista delle auto -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <% cars.forEach(car => { 
+         let imagesArray;
+         try {
+           imagesArray = JSON.parse(car.image_url);
+           if (!Array.isArray(imagesArray)) {
+             imagesArray = [imagesArray];
+           }
+         } catch(e) {
+           imagesArray = [car.image_url || '/uploads/default_car.png'];
+         }
+    %>
+      <div class="bg-gray-800 p-4 rounded shadow hover:shadow-lg transition">
+        <div class="relative" data-images='<%= JSON.stringify(imagesArray) %>' data-carousel-index="0" id="carousel-<%= car.id %>">
+          <img src="<%= imagesArray[0] %>" id="img-<%= car.id %>" alt="<%= car.brand %> <%= car.model %>" class="rounded object-contain mb-4" style="width:10cm; height:10cm;">
+          <% if (imagesArray.length > 1) { %>
+            <button class="absolute left-0 top-1/2 transform -translate-y-1/2 text-white text-2xl hover:text-gray-300 focus:outline-none carousel-prev" data-carousel-id="<%= car.id %>" style="background: transparent;">&#10094;</button>
+            <button class="absolute right-0 top-1/2 transform -translate-y-1/2 text-white text-2xl hover:text-gray-300 focus:outline-none carousel-next" data-carousel-id="<%= car.id %>" style="background: transparent;">&#10095;</button>
+          <% } %>
+        </div>
+        <div class="flex items-center space-x-2">
+          <h2 class="text-xl font-bold"><%= car.brand %> <%= car.model %></h2>
+          <button class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-200 clone-car" data-car-id="<%= car.id %>">
+            <i class="fa-solid fa-clone text-gray-600"></i>
+          </button>
+          <button class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-200 change-driver" data-car-id="<%= car.id %>" data-current-driver="<%= car.assigned_driver %>" data-current-status="<%= car.status %>">
+            <i class="fa-solid fa-user-edit text-gray-600"></i>
+          </button>          
+        </div>
+        <p><strong>Targa:</strong> <%= car.license_plate %></p>
+        <p><strong>Driver:</strong> <%= car.assigned_driver %></p>
+        <p><strong>Stato:</strong>
+          <% if (car.status && car.status.toLowerCase() === "assegnata") { %>
+            <span class="btn" style="pointer-events: none; background-color: #66cc66; color: #ffffff; font-weight: bold; padding: 0.25rem 0.75rem; border-radius: 9999px;">
+              <%= car.status %>
+            </span>
+          <% } else { %>
+            <span><%= car.status %></span>
+          <% } %>
+        </p>
+        <div class="flex flex-col space-y-2 mt-2">
+          <a href="/cars/<%= car.id %>" class="btn-grey px-4 py-2"><i class="fa-solid fa-circle-info mr-2"></i>Dettagli</a>
+          <a href="/cars/<%= car.id %>/scheda-tecnica" class="btn-grey px-4 py-2"><i class="fa-solid fa-wrench mr-2"></i>Scheda tecnica</a>
+          <a href="/cars/<%= car.id %>/assicurazione" class="btn-grey px-4 py-2"><i class="fa-solid fa-shield mr-2"></i>Assicurazione</a>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</div>
+
+<!-- Popup per notifiche clonazione auto -->
+<div id="popup" style="
+    position: fixed; 
+    top: 50%; 
+    left: 50%; 
+    transform: translate(-50%, -50%); 
+    background: #111826; 
+    padding: 20px; 
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); 
+    border-radius: 10px; 
+    display: none; 
+    z-index: 1000;
+    text-align: center;
+">
+    <h2 style="color: white; font-weight: bold; margin-bottom: 10px;">
+        Conferma Clonazione
+    </h2>
+    <p id="popup-message" style="font-size: 18px; color: white;"></p>
+    <button onclick="document.getElementById('popup').style.display = 'none'" 
+        style="
+            display: block; 
+            margin: auto; 
+            margin-top: 10px; 
+            background-color: red; 
+            color: white; 
+            font-weight: bold; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 5px; 
+            cursor: pointer;
+        ">
+        Chiudi
+    </button>
+</div>
+
+<script>
+  function showPopup(message) {
+    document.getElementById('popup-message').innerText = message;
+    document.getElementById('popup').style.display = 'block';
+  }
+</script>
+
+
+<!-- Script per clonazione auto -->
+<script>
+  function showPopup(message) {
+    document.getElementById('popup-message').innerText = message;
+    document.getElementById('popup').style.display = 'block';
+  }
+
+  document.querySelectorAll('.clone-car').forEach(button => {
+    button.addEventListener('click', async function () {
+      const carId = this.getAttribute('data-car-id');
+
+      if (!carId) {
+        showPopup('Errore: ID auto non valido.');
+        return;
+      }
+
+      console.log(`🔄 Clonazione auto con ID: ${carId}`);
+
+      try {
+        const response = await fetch(`/cars/clone/${carId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          console.log('✅ Auto clonata con successo!', data);
+          showPopup('Auto clonata con successo!');
+          setTimeout(() => location.reload(), 2000); // Ricarica la pagina dopo 2s
+        } else {
+          console.error('❌ Errore nella clonazione:', data.message);
+          showPopup('Errore nella clonazione: ' + data.message);
+        }
+      } catch (error) {
+        console.error('❌ Errore di rete o server:', error);
+        showPopup('Errore di rete o server.');
+      }
+    });
+  });
+</script>
+
+<!-- Popup Cambio Driver (restyling grafico coerente) -->
+<div id="driver-popup" style="
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #111826;
+  padding: 24px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border-radius: 12px;
+  display: none;
+  z-index: 1000;
+  text-align: center;
+  width: 320px;
+  color: white;
+  font-family: sans-serif;
+">
+  <h2 style="font-weight: bold; font-size: 20px; margin-bottom: 16px;">Modifica Driver</h2>
+  <form id="change-driver-form" class="space-y-4">
+    <input type="hidden" name="car_id" id="driver-car-id" />
+
+    <div class="flex flex-col items-start">
+      <label for="new-driver" style="font-weight: bold;">Nuovo Driver</label>
+      <input type="text" id="new-driver" name="new_driver"
+        style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #4b5563; background-color: #374151; color: white;" 
+        placeholder="Inserisci nome driver" required />
+    </div>
+
+    <div class="flex flex-col items-start">
+      <label for="new-status" style="font-weight: bold;">Stato</label>
+      <select id="new-status" name="new_status"
+        style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #4b5563; background-color: #374151; color: white;">
+        <option value="Assegnata">Assegnata</option>
+        <option value="Disponibile">Disponibile</option>
+        <option value="Disponibile">Manutenzione</option>
+      </select>
+    </div>
+
+    <div class="flex justify-between mt-4 space-x-2">
+      <button type="submit" style="
+        flex: 1;
+        background-color: #66cc66;
+        color: white;
+        font-weight: bold;
+        padding: 10px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      ">
+        Salva
+      </button>
+      <button type="button" onclick="document.getElementById('driver-popup').style.display = 'none'" style="
+        flex: 1;
+        background-color: #ef4444;
+        color: white;
+        font-weight: bold;
+        padding: 10px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      ">
+        Chiudi
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.querySelectorAll('.change-driver').forEach(button => {
+    button.addEventListener('click', () => {
+      const carId = button.getAttribute('data-car-id');
+      const currentDriver = button.getAttribute('data-current-driver');
+      const currentStatus = button.getAttribute('data-current-status');
+
+      document.getElementById('driver-car-id').value = carId;
+      document.getElementById('new-driver').value = currentDriver;
+      document.getElementById('new-status').value = currentStatus;
+
+      document.getElementById('driver-popup').style.display = 'block';
+    });
+  });
+
+  // Gestione submit del form
+  document.getElementById('change-driver-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const carId = document.getElementById('driver-car-id').value;
+    const newDriver = document.getElementById('new-driver').value;
+    const newStatus = document.getElementById('new-status').value;
+
+    try {
+      const response = await fetch(`/cars/change-driver/${carId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ assigned_driver: newDriver, status: newStatus })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        showPopup('Driver aggiornato con successo!');
+        setTimeout(() => location.reload(), 1500);
+      } else {
+        showPopup('Errore: ' + data.message);
+      }
+    } catch (error) {
+      showPopup('Errore di rete');
+      console.error(error);
+    }
+
+    document.getElementById('driver-popup').style.display = 'none';
+  });
+</script>
+
+<script>
+  document.getElementById('search-input').addEventListener('input', function () {
+    const query = this.value.toLowerCase();
+    const cards = document.querySelectorAll('.grid > div');
+
+    cards.forEach(card => {
+      const brandModel = card.querySelector('h2')?.innerText.toLowerCase() || '';
+      const license = card.querySelector('p:nth-of-type(1)')?.innerText.toLowerCase() || '';
+      const driver = card.querySelector('p:nth-of-type(2)')?.innerText.toLowerCase() || '';
+      const status = card.querySelector('p:nth-of-type(3)')?.innerText.toLowerCase() || '';
+
+      const match = [brandModel, license, driver, status].some(text => text.includes(query));
+
+      card.style.display = match ? 'block' : 'none';
+    });
+  });
+</script>
+
+
+
+<%- include('partials/footer') %>

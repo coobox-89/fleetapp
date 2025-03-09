@@ -1,0 +1,23 @@
+          <%- include('partials/header', { title: "Benvenuto", user: user }) %>
+
+          <!-- Video background -->
+            <div class="absolute left-0 w-full overflow-hidden" style="top: 64px; bottom: -94px;">
+              <video autoplay muted loop class="w-full h-full object-cover opacity-30">
+                <source src="/assets/bg-video.mp4" type="video/mp4">
+                Il tuo browser non supporta il tag video.
+              </video>
+            </div>
+
+
+
+          <!-- Contenuto in sovrapposizione -->
+          <div class="relative z-20 flex flex-col items-center justify-center h-screen text-center">
+            <h1 class="text-4xl md:text-6xl font-bold mb-4">Benvenuto su FleetApp</h1>
+            <p class="text-xl md:text-2xl mb-8">Gestisci il parco auto aziendale in modo semplice ed efficace</p>
+            <div class="space-x-4">
+              <a href="/signup" class="btn hover:shadow-lg">Registrati</a>
+              <a href="/login" class="btn hover:shadow-lg">Login</a>
+            </div>
+          </div>
+
+          <%- include('partials/footer') %>

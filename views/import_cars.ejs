@@ -1,0 +1,22 @@
+    <%- include('partials/header', { title: "Importa Baseline", user: user }) %>
+    <div class="max-w-xl mx-auto mt-10 px-4">
+      <h1 class="text-3xl mb-4">Importa Baseline Auto</h1>
+      <p class="text-sm text-gray-400 mb-4">
+        Utilizza solo file in formato CSV o XLS. 
+        Scarica il <a href="/assets/import_template.csv" class="text-[#66cc66] underline" download>template di esempio</a> per verificare il formato corretto.
+      </p>
+      <% if (error) { %>
+        <div class="bg-red-500 p-2 mb-4"><%= error %></div>
+      <% } %>
+      <form action="/cars/import" method="POST" enctype="multipart/form-data" class="space-y-4">
+        <div>
+          <label for="importFile" class="btn inline-block cursor-pointer">Scegli File CSV/XLS</label>
+          <input id="importFile" type="file" name="importFile" class="hidden" required>
+        </div>
+        <div class="flex justify-between">
+          <button type="submit" class="btn px-4 py-2">Importa</button>
+          <a href="/dashboard" class="btn px-4 py-2">Indietro</a>
+        </div>
+      </form>
+    </div>
+    <%- include('partials/footer') %>

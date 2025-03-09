@@ -1,0 +1,78 @@
+
+
+                                                  <!DOCTYPE html>
+                                                  <html lang="it">
+                                                  <head>
+                                                    <meta charset="UTF-8">
+                                                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                                                    <title><%= title || "FleetApp" %></title>
+                                                    <!-- Google Fonts: Montserrat -->
+                                                    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+                                                    <!-- Tailwind CSS CDN -->
+                                                    <script src="https://cdn.tailwindcss.com"></script>
+                                                    <!-- Font Awesome CDN / integrity="sha512-Fo3rlrZj/kTcG6v9H+Z8W0gJ/5kkxBzo7Kn5Br4Z+2ZOehhjY3iBj5Gsj9G0z5V5Z5sl4u5Rz/9/x6y3eABzVw==" 
+                                                      crossorigin="anonymous" referrerpolicy="no-referrer" />-->
+                                                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"  
+                                                      crossorigin="anonymous" referrerpolicy="no-referrer" />
+                                                    <style>
+                                                      /* Global Styles */
+                                                      body {
+                                                        background-color: #2C3E50; /* Sfondo dark pastel */
+                                                        color: #ecf0f1;
+                                                        font-family: 'Montserrat', sans-serif;
+                                                      }
+                                                      a { color: #66cc66; }
+                                                      /* Button styles (verde fluo per i bottoni principali) */
+                                                      .btn {
+                                                        background-color: #66cc66;  /* Verde fluo più tenue */
+                                                        color: #ffffff;
+                                                        font-weight: bold;
+                                                        padding: 0.5rem 1rem;
+                                                        border: none;
+                                                        border-radius: 9999px;
+                                                        transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+                                                      }
+                                                      .btn:hover {
+                                                        background-color: #55b155;
+                                                        transform: scale(1.05);
+                                                        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                                                      }
+                                                      /* Nuova classe per bottoni grey */
+                                                      .btn-grey {
+                                                        background-color: #2C3E50; /* Stesso colore dello sfondo */
+                                                        color: #ffffff;
+                                                        font-weight: bold;
+                                                        padding: 0.5rem 1rem;
+                                                        border: none;
+                                                        border-radius: 9999px;
+                                                        transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+                                                      }
+                                                      .btn-grey:hover {
+                                                        background-color: #273747;
+                                                        transform: scale(1.05);
+                                                        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                                                      }
+                                                      /* Header specific */
+                                                      .header {
+                                                        background-color: #34495e;
+                                                      }
+                                                    </style>
+                                                  </head>
+                                                  <body class="min-h-screen flex flex-col">
+                                                    <nav class="header p-4 flex justify-between items-center border-b border-gray-700">
+                                                      <div class="flex items-center space-x-2">
+                                                        <i class="fas fa-car-side text-2xl" style="color: #66cc66;"></i>
+                                                        <a href="/" class="text-2xl font-bold" style="color: #66cc66;">FleetApp</a>
+                                                      </div>
+                                                      <div>
+                                                        <% if (typeof user !== 'undefined' && user) { %>
+                                                          <a href="/insight" class="mr-4 hover:underline">Insight</a>
+                                                          <a href="/dashboard" class="mr-4 hover:underline">Il mio parco</a>
+                                                          <a href="/logout" class="mr-4 hover:underline">Logout</a>
+                                                        <% } else { %>
+                                                          <a href="/login" class="mr-4 hover:underline">Login</a>
+                                                          <a href="/signup" class="mr-4 hover:underline">Registrati</a>
+                                                        <% } %>
+                                                      </div>
+                                                    </nav>
+                                                    <main class="flex-grow container mx-auto p-4">

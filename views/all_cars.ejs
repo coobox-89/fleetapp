@@ -1,0 +1,57 @@
+              <%- include('partials/header', { title: "Tutte le Auto", user: user }) %>
+
+              <div class="max-w-7xl mx-auto p-4">
+                <h1 class="text-3xl font-bold mb-6">Tutte le Auto</h1>
+
+                <!-- Elenco auto in formato lista -->
+                <div class="space-y-4">
+                  <% cars.forEach(car => { 
+                       let imagesArray;
+                       try {
+                         imagesArray = JSON.parse(car.image_url);
+                         if (!Array.isArray(imagesArray)) { 
+                           imagesArray = [imagesArray]; 
+                         }
+                       } catch(e) {
+                         imagesArray = [car.image_url || '/uploads/default_car.png'];
+                       }
+                  %>
+                    <div class="flex items-center bg-gray-800 p-4 rounded shadow">
+                      <!-- Miniatura: usa object-contain per mostrare l'intera immagine senza tagli -->
+                      <img src="<%= imagesArray[0] %>" 
+                           alt="<%= car.brand %> <%= car.model %>" 
+                           class="w-16 h-16 object-contain rounded mr-4">
+                      <div class="flex-grow">
+                        <p class="font-bold"><%= car.brand %> <%= car.model %></p>
+                        <p>Targa: <%= car.license_plate %></p>
+                        <p>
+                          <strong>Stato:</strong>
+                          <% if (car.status && car.status.toLowerCase() === "assegnata") { %>
+                            <span class="btn" style="pointer-events: none; background-color: #66cc66; color: #ffffff; font-weight: bold; padding: 0.25rem 0.75rem; border-radius: 9999px;">
+                              <%= car.status %>
+                            </span>
+                          <% } else { %>
+                            <span><%= car.status %></span>
+                          <% } %>
+                        </p>
+                        <p>Driver: <%= car.assigned_driver %></p>
+                      </div>
+                      <div>
+                        <a href="/cars/<%= car.id %>" class="btn-grey px-4 py-2"><i class="fa-solid fa-circle-info mr-2"></i>Dettagli</a>
+                      </div>
+                    </div>
+                  <% }); %>
+                </div>
+
+                <!-- Paginazione -->
+                <div class="mt-6 flex justify-center space-x-4">
+                  <% if (page > 1) { %>
+                    <a href="/cars/all?page=<%= page - 1 %>&cerca=<%= typeof cerca !== 'undefined' ? cerca : '' %>" class="btn-grey px-4 py-2">Precedente</a>
+                  <% } %>
+                  <% if (page < totalPages) { %>
+                    <a href="/cars/all?page=<%= page + 1 %>&cerca=<%= typeof cerca !== 'undefined' ? cerca : '' %>" class="btn-grey px-4 py-2">Successiva</a>
+                  <% } %>
+                </div>
+              </div>
+
+              <%- include('partials/footer') %>
