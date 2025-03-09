@@ -55,7 +55,7 @@
   }
 
   async function populateModels(brand) {
-    const data = await fetchCarQueryJSONP('getModels', { make: brand });
+    const data = await fetchCarQueryJSONP('getModels', { make: brand, sold_in_us: 0 });
     const modelSelect = document.getElementById('templateModel');
     modelSelect.innerHTML = '<option value="">-- Seleziona Modello --</option>' +
       data.Models.map(model => `<option value="${model.model_name}">${model.model_name}</option>`).join('');
@@ -98,6 +98,7 @@
     });
   });
 </script>
+
 
 
 
