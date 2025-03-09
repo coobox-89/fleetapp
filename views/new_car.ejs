@@ -6,6 +6,7 @@
   <% } %>
   <form action="/cars/new" method="POST" enctype="multipart/form-data" class="space-y-8">
 
+
 <!-- AGGIUNTA ALL'INIZIO DEL FORM -->
 <section class="mb-6">
   <h2 class="text-2xl font-bold mb-4 border-b border-gray-600 pb-2">Seleziona Template Auto</h2>
@@ -57,7 +58,6 @@
 
   async function populateModels(brand) {
     const data = await fetchCarQueryJSONP('getModels', { make: brand });
-    console.log("▶️ Modelli ricevuti:", data);
     const modelSelect = document.getElementById('templateModel');
     modelSelect.innerHTML = '<option value="">-- Seleziona Modello --</option>' +
       data.Models.map(model => `<option value="${model.model_name}">${model.model_name}</option>`).join('');
@@ -86,12 +86,14 @@
 
     document.getElementById('templateBrand').addEventListener('change', e => {
       const brand = e.target.value;
+      document.getElementById('templateModel').innerHTML = '<option>Caricamento...</option>';
       if (brand) populateModels(brand);
     });
 
     document.getElementById('templateModel').addEventListener('change', e => {
       const brand = document.getElementById('templateBrand').value;
       const model = e.target.value;
+      document.getElementById('templateTrim').innerHTML = '<option>Caricamento...</option>';
       if (brand && model) populateTrims(brand, model);
     });
 
@@ -100,6 +102,7 @@
     });
   });
 </script>
+
 
 
 
