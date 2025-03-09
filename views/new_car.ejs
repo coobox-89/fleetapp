@@ -58,15 +58,16 @@
   }
 
   async function populateModels(brand) {
-  const data = await fetchCarQueryJSONP('getModels', { make: brand });
-  console.log("Modelli caricati:", data.Models); // per debug
+  const data = await fetchCarQueryJSONP('getModels', { make: brand.toLowerCase() });
   const modelSelect = document.getElementById('templateModel');
   modelSelect.innerHTML = '<option value="">-- Seleziona Modello --</option>' +
     data.Models
-      .filter(model => model.model_name) // <-- evita undefined/null
+      .filter(model => model.model_name)
       .map(model => `<option value="${model.model_name}">${model.model_name}</option>`)
       .join('');
+  console.log(`Modelli caricati per ${brand}:`, data.Models);
 }
+
 
 
 
