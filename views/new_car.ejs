@@ -49,36 +49,31 @@
   }
 
   async function populateBrands() {
-  const data = await fetchCarQueryJSONP('getMakes', { sold_in_us: 0 });
-  const brandSelect = document.getElementById('templateBrand');
-  brandSelect.innerHTML = '<option value="">-- Seleziona Marca --</option>' +
-    data.Makes.map(make => `<option value="${make.make_id}">${make.make_display}</option>`).join('');
-}
-
+    const data = await fetchCarQueryJSONP('getMakes', { sold_in_us: 0 });
+    const brandSelect = document.getElementById('templateBrand');
+    brandSelect.innerHTML = '<option value="">-- Seleziona Marca --</option>' +
+      data.Makes.map(make => `<option value="${make.make_name}">${make.make_display}</option>`).join('');
+  }
 
   async function populateModels(brand) {
-  const data = await fetchCarQueryJSONP('getModels', { make: brand.toLowerCase() });
-  const modelSelect = document.getElementById('templateModel');
-  modelSelect.innerHTML = '<option value="">-- Seleziona Modello --</option>' +
-    data.Models
-      .filter(model => model.model_name)
-      .map(model => `<option value="${model.model_name}">${model.model_name}</option>`)
-      .join('');
-  console.log(`Modelli caricati per ${brand}:`, data.Models);
-}
-
-
-
-
+    const data = await fetchCarQueryJSONP('getModels', { make: brand });
+    const modelSelect = document.getElementById('templateModel');
+    const models = data.Models || [];
+    console.log(`Modelli caricati per ${brand}:`, models);
+    modelSelect.innerHTML = '<option value="">-- Seleziona Modello --</option>' +
+      models
+        .filter(model => model.model_name)
+        .map(model => `<option value="${model.model_name}">${model.model_name}</option>`)
+        .join('');
+  }
 
   async function populateTrims(brand, model) {
-    const data = await fetchCarQueryJSONP('getTrims', {
-      make: brand,
-      model: model
-    });
+    const data = await fetchCarQueryJSONP('getTrims', { make: brand, model });
     const trimSelect = document.getElementById('templateTrim');
+    const trims = data.Trims || [];
+    console.log(`Versioni caricate per ${brand} ${model}:`, trims);
     trimSelect.innerHTML = '<option value="">-- Seleziona Versione --</option>' +
-      data.Trims.map(trim =>
+      trims.map(trim =>
         `<option value='${JSON.stringify(trim)}'>${trim.model_trim || 'Standard'} - ${trim.model_year}</option>`
       ).join('');
   }
