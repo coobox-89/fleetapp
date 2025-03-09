@@ -49,13 +49,12 @@
   }
 
   async function populateBrands() {
-    const data = await fetchCarQueryJSONP('getMakes', { sold_in_us: 0 });
-    const brandSelect = document.getElementById('templateBrand');
-    brandSelect.innerHTML = '<option value="">-- Seleziona Marca --</option>' +
-      data.Makes.map(make =>
-        `<option value="${make.make_name}">${make.make_display}</option>`
-      ).join('');
-  }
+  const data = await fetchCarQueryJSONP('getMakes', { sold_in_us: 0 });
+  const brandSelect = document.getElementById('templateBrand');
+  brandSelect.innerHTML = '<option value="">-- Seleziona Marca --</option>' +
+    data.Makes.map(make => `<option value="${make.make_id}">${make.make_display}</option>`).join('');
+}
+
 
   async function populateModels(brand) {
   const data = await fetchCarQueryJSONP('getModels', { make: brand.toLowerCase() });
