@@ -68,24 +68,27 @@
 
       // Popola il dropdown dei modelli in base alla marca selezionata
       async function populateModels(brand) {
-        try {
-          const data = await fetchCarQueryJSONP('getModels', {
-            make: brand,
-            sold_in_us: 0,
-            year: new Date().getFullYear()
-          });
-          const modelSelect = document.getElementById('templateModel');
-          const models = data.Models || [];
-          console.log(`Modelli caricati per ${brand}:`, models);
-          modelSelect.innerHTML = '<option value="">-- Seleziona Modello --</option>' +
-            models
-              .filter(model => model.model_name)
-              .map(model => `<option value="${model.model_name}">${model.model_name}</option>`)
-              .join('');
-        } catch (error) {
-          console.error('Errore nel caricamento dei modelli:', error);
-        }
-      }
+  try {
+    // Prova a variare i parametri: se 'year' causa problemi, prova a rimuoverlo
+    const data = await fetchCarQueryJSONP('getModels', {
+      make: brand,
+      // Prova inizialmente senza 'sold_in_us' o 'year'
+      sold_in_us: 0,
+      // year: new Date().getFullYear()
+    });
+    console.log(`Risposta da getModels per ${brand}:`, data);
+    const modelSelect = document.getElementById('templateModel');
+    const models = data.Models || [];
+    modelSelect.innerHTML = '<option value="">-- Seleziona Modello --</option>' +
+      models
+        .filter(model => model.model_name)
+        .map(model => `<option value="${model.model_name}">${model.model_name}</option>`)
+        .join('');
+  } catch (error) {
+    console.error('Errore nel caricamento dei modelli:', error);
+  }
+}
+
 
       // Popola il dropdown delle versioni in base a marca e modello selezionati
       async function populateTrims(brand, model) {
