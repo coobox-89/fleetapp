@@ -6,119 +6,137 @@
   <% } %>
   <form action="/cars/new" method="POST" enctype="multipart/form-data" class="space-y-8">
 
+    <!-- Sezione: Template Auto -->
+    <section class="mb-6">
+      <h2 class="text-2xl font-bold mb-4 border-b border-gray-600 pb-2">Seleziona Template Auto</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label>
+            Marca
+            <i class="fa-solid fa-circle-info text-xs text-gray-400 ml-1" title="Importa da database CarQuery API"></i>
+          </label>
+          <select id="templateBrand" class="w-full p-2 bg-gray-800 border border-gray-600 text-white"></select>
+        </div>
+        <div>
+          <label>Modello</label>
+          <select id="templateModel" class="w-full p-2 bg-gray-800 border border-gray-600 text-white"></select>
+        </div>
+        <div>
+          <label>Versione</label>
+          <select id="templateTrim" class="w-full p-2 bg-gray-800 border border-gray-600 text-white"></select>
+        </div>
+      </div>
+    </section>
 
-<!-- AGGIUNTA ALL'INIZIO DEL FORM -->
-<section class="mb-6">
-  <h2 class="text-2xl font-bold mb-4 border-b border-gray-600 pb-2">Seleziona Template Auto</h2>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <div>
-      <label>Marca <i class="fa-solid fa-circle-info text-xs text-gray-400 ml-1" title="Importa da database CarQuery API"></i></label>
-      <select id="templateBrand" class="w-full p-2 bg-gray-800 border border-gray-600 text-white"></select>
-    </div>
-    <div>
-      <label>Modello</label>
-      <select id="templateModel" class="w-full p-2 bg-gray-800 border border-gray-600 text-white"></select>
-    </div>
-    <div>
-      <label>Versione</label>
-      <select id="templateTrim" class="w-full p-2 bg-gray-800 border border-gray-600 text-white"></select>
-    </div>
-  </div>
-</section>
+    <script>
+      // Funzione per gestire le chiamate JSONP a CarQuery API
+      function fetchCarQueryJSONP(cmd, params = {}) {
+        return new Promise((resolve, reject) => {
+          const callbackName = `carQueryCallback_${cmd}_${Date.now()}`;
+          window[callbackName] = function (data) {
+            resolve(data);
+            delete window[callbackName];
+            script.remove();
+          };
 
-<script>
-  function fetchCarQueryJSONP(cmd, params = {}) {
-    return new Promise((resolve) => {
-      const callbackName = `carQueryCallback_${cmd}_${Date.now()}`;
-      window[callbackName] = function (data) {
-        resolve(data);
-        delete window[callbackName];
-        script.remove();
-      };
+          const queryParams = new URLSearchParams({
+            cmd,
+            callback: callbackName,
+            ...params
+          });
 
-      const queryParams = new URLSearchParams({
-        cmd,
-        callback: callbackName,
-        ...params
-      });
-
-      const script = document.createElement("script");
-      script.src = `https://www.carqueryapi.com/api/0.3/?${queryParams.toString()}`;
-      document.body.appendChild(script);
-    });
-  }
-
-  async function populateBrands() {
-    const data = await fetchCarQueryJSONP('getMakes', { sold_in_us: 0 });
-    const brandSelect = document.getElementById('templateBrand');
-    brandSelect.innerHTML = '<option value="">-- Seleziona Marca --</option>' +
-      data.Makes.map(make => `<option value="${make.make_name}">${make.make_display}</option>`).join('');
-  }
-
-  async function populateModels(brand) {
-    const data = await fetchCarQueryJSONP('getModels', { make: brand });
-    const modelSelect = document.getElementById('templateModel');
-    const models = data.Models || [];
-    console.log(`Modelli caricati per ${brand}:`, models);
-    modelSelect.innerHTML = '<option value="">-- Seleziona Modello --</option>' +
-      models
-        .filter(model => model.model_name)
-        .map(model => `<option value="${model.model_name}">${model.model_name}</option>`)
-        .join('');
-  }
-
-  async function populateTrims(brand, model) {
-    const data = await fetchCarQueryJSONP('getTrims', { make: brand, model });
-    const trimSelect = document.getElementById('templateTrim');
-    const trims = data.Trims || [];
-    console.log(`Versioni caricate per ${brand} ${model}:`, trims);
-    trimSelect.innerHTML = '<option value="">-- Seleziona Versione --</option>' +
-      trims.map(trim =>
-        `<option value='${JSON.stringify(trim)}'>${trim.model_trim || 'Standard'} - ${trim.model_year}</option>`
-      ).join('');
-  }
-
-  function autoFillForm(trimJSON) {
-    const trim = JSON.parse(trimJSON);
-    document.querySelector('input[name=brand]').value = trim.make_display;
-    document.querySelector('input[name=model]').value = trim.model_name;
-    document.querySelector('input[name=year]').value = trim.model_year;
-    document.querySelector('input[name=fuel_type]').value = trim.model_engine_fuel;
-    document.querySelector('input[name=engine_capacity]').value = trim.model_engine_cc;
-    document.querySelector('input[name=horsepower]').value = trim.model_engine_power_ps;
-    document.querySelector('input[name=transmission]').value = trim.model_transmission_type;
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    populateBrands();
-
-    document.getElementById('templateBrand').addEventListener('change', (e) => {
-      const brand = e.target.value;
-      if (brand) {
-        populateModels(brand);
-        document.getElementById('templateTrim').innerHTML = '<option value="">-- Seleziona Versione --</option>';
+          const script = document.createElement("script");
+          script.src = `https://www.carqueryapi.com/api/0.3/?${queryParams.toString()}`;
+          script.onerror = function() {
+            reject(new Error("Errore nel caricamento della risorsa CarQuery"));
+          };
+          document.body.appendChild(script);
+        });
       }
-    });
 
-    document.getElementById('templateModel').addEventListener('change', (e) => {
-      const model = e.target.value;
-      const brand = document.getElementById('templateBrand').value;
-      if (brand && model) populateTrims(brand, model);
-    });
+      // Popola il dropdown delle marche
+      async function populateBrands() {
+        try {
+          const data = await fetchCarQueryJSONP('getMakes', { sold_in_us: 0 });
+          const brandSelect = document.getElementById('templateBrand');
+          brandSelect.innerHTML = '<option value="">-- Seleziona Marca --</option>' +
+            data.Makes.map(make => `<option value="${make.make_name}">${make.make_display}</option>`).join('');
+        } catch (error) {
+          console.error('Errore nel caricamento delle marche:', error);
+        }
+      }
 
-    document.getElementById('templateTrim').addEventListener('change', (e) => {
-      if (e.target.value) autoFillForm(e.target.value);
-    });
-  });
-</script>
+      // Popola il dropdown dei modelli in base alla marca selezionata
+      async function populateModels(brand) {
+        try {
+          const data = await fetchCarQueryJSONP('getModels', {
+            make: brand,
+            sold_in_us: 0,
+            year: new Date().getFullYear()
+          });
+          const modelSelect = document.getElementById('templateModel');
+          const models = data.Models || [];
+          console.log(`Modelli caricati per ${brand}:`, models);
+          modelSelect.innerHTML = '<option value="">-- Seleziona Modello --</option>' +
+            models
+              .filter(model => model.model_name)
+              .map(model => `<option value="${model.model_name}">${model.model_name}</option>`)
+              .join('');
+        } catch (error) {
+          console.error('Errore nel caricamento dei modelli:', error);
+        }
+      }
 
+      // Popola il dropdown delle versioni in base a marca e modello selezionati
+      async function populateTrims(brand, model) {
+        try {
+          const data = await fetchCarQueryJSONP('getTrims', { make: brand, model });
+          const trimSelect = document.getElementById('templateTrim');
+          const trims = data.Trims || [];
+          console.log(`Versioni caricate per ${brand} ${model}:`, trims);
+          trimSelect.innerHTML = '<option value="">-- Seleziona Versione --</option>' +
+            trims.map(trim =>
+              `<option value='${JSON.stringify(trim)}'>${trim.model_trim || 'Standard'} - ${trim.model_year}</option>`
+            ).join('');
+        } catch (error) {
+          console.error('Errore nel caricamento delle versioni:', error);
+        }
+      }
 
+      // Auto-compila il form in base alla versione scelta
+      function autoFillForm(trimJSON) {
+        const trim = JSON.parse(trimJSON);
+        document.querySelector('input[name=brand]').value = trim.make_display;
+        document.querySelector('input[name=model]').value = trim.model_name;
+        document.querySelector('input[name=year]').value = trim.model_year;
+        document.querySelector('input[name=fuel_type]').value = trim.model_engine_fuel;
+        document.querySelector('input[name=engine_capacity]').value = trim.model_engine_cc;
+        document.querySelector('input[name=horsepower]').value = trim.model_engine_power_ps;
+        document.querySelector('input[name=transmission]').value = trim.model_transmission_type;
+      }
 
+      document.addEventListener('DOMContentLoaded', () => {
+        populateBrands();
 
+        document.getElementById('templateBrand').addEventListener('change', (e) => {
+          const brand = e.target.value;
+          if (brand) {
+            populateModels(brand);
+            document.getElementById('templateTrim').innerHTML = '<option value="">-- Seleziona Versione --</option>';
+          }
+        });
 
+        document.getElementById('templateModel').addEventListener('change', (e) => {
+          const model = e.target.value;
+          const brand = document.getElementById('templateBrand').value;
+          if (brand && model) populateTrims(brand, model);
+        });
 
-
-    
+        document.getElementById('templateTrim').addEventListener('change', (e) => {
+          if (e.target.value) autoFillForm(e.target.value);
+        });
+      });
+    </script>
 
     <!-- Sezione 1: Informazioni Base -->
     <section>
@@ -279,7 +297,7 @@
 </div>
 
 <script>
-  // Gestione preview multipla con carosello
+  // Gestione preview multipla con carosello per le immagini caricate
   const imagesInput = document.getElementById('images');
   const previewCarousel = document.getElementById('previewCarousel');
   const previewImage = document.getElementById('previewImage');
