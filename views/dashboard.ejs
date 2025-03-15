@@ -48,14 +48,129 @@
         </div>
         <div class="flex items-center space-x-2">
           <h2 class="text-xl font-bold"><%= car.brand %> <%= car.model %></h2>
+        
+          <!-- Clone -->
           <button class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-200 clone-car" data-car-id="<%= car.id %>">
             <i class="fa-solid fa-clone text-gray-600"></i>
           </button>
+        
+          <!-- Cambio Driver -->
           <button class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-200 change-driver" data-car-id="<%= car.id %>" data-current-driver="<%= car.assigned_driver %>" data-current-status="<%= car.status %>">
             <i class="fa-solid fa-user-edit text-gray-600"></i>
-          </button>          
+          </button>
+        
+          <!-- Modifica km -->
+          <button class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-200 edit-km" 
+                  data-car-id="<%= car.id %>" 
+                  data-current-km="<%= car.mileage %>">
+            <i class="fa-solid fa-road text-gray-600"></i>
+          </button>
         </div>
-        <p><strong>Driver:</strong> <%= car.license_plate %></p>
+
+        <!-- Popup Modifica Chilometri -->
+<div id="km-popup" style="
+position: fixed;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+background: #111826;
+padding: 24px;
+box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+border-radius: 12px;
+display: none;
+z-index: 1000;
+text-align: center;
+width: 320px;
+color: white;
+font-family: sans-serif;
+">
+<h2 style="font-weight: bold; font-size: 20px; margin-bottom: 16px;">Modifica Chilometri</h2>
+<form id="change-km-form" class="space-y-4">
+  <input type="hidden" name="car_id" id="km-car-id" />
+
+  <div class="flex flex-col items-start">
+    <label for="new-km" style="font-weight: bold;">Nuovi Chilometri</label>
+    <input type="number" id="new-km" name="new_km"
+      style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #4b5563; background-color: #374151; color: white;" 
+      placeholder="Inserisci km attuali" required />
+  </div>
+
+  <div class="flex justify-between mt-4 space-x-2">
+    <button type="submit" style="
+      flex: 1;
+      background-color: #66cc66;
+      color: white;
+      font-weight: bold;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    ">
+      Salva
+    </button>
+    <button type="button" onclick="document.getElementById('km-popup').style.display = 'none'" style="
+      flex: 1;
+      background-color: #ef4444;
+      color: white;
+      font-weight: bold;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    ">
+      Chiudi
+    </button>
+  </div>
+</form>
+</div>
+
+        <!-- Script per popup kilometri-->
+<script>
+  document.querySelectorAll('.edit-km').forEach(button => {
+    button.addEventListener('click', () => {
+      const carId = button.getAttribute('data-car-id');
+      const currentKm = button.getAttribute('data-current-km');
+
+      document.getElementById('km-car-id').value = carId;
+      document.getElementById('new-km').value = currentKm || '';
+
+      document.getElementById('km-popup').style.display = 'block';
+    });
+  });
+
+  document.getElementById('change-km-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const carId = document.getElementById('km-car-id').value;
+    const newKm = document.getElementById('new-km').value;
+
+    try {
+      const response = await fetch(`/cars/change-km/${carId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ mileage: newKm })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        showPopup('Chilometri aggiornati con successo!');
+        setTimeout(() => location.reload(), 1500);
+      } else {
+        showPopup('Errore: ' + data.message);
+      }
+    } catch (error) {
+      showPopup('Errore di rete');
+      console.error(error);
+    }
+
+    document.getElementById('km-popup').style.display = 'none';
+  });
+</script>
+
+        
+        <p><strong>Targa:</strong> <%= car.license_plate %></p>
         <p><strong>Driver:</strong> <%= car.assigned_driver %></p>
         <p><strong>Stato:</strong>
           <% if (car.status && car.status.toLowerCase() === "assegnata") { %>
@@ -90,10 +205,10 @@
     z-index: 1000;
     text-align: center;
 ">
-    <h2 style="color: white; font-weight: bold; margin-bottom: 10px;">
-        Conferma Clonazione
-    </h2>
-    <p id="popup-message" style="font-size: 18px; color: white;"></p>
+    <h2 id="popup-title" style="color: white; font-weight: bold; margin-bottom: 10px;">
+      Messaggio
+  </h2>
+  <p id="popup-message" style="font-size: 18px; color: white;"></p>  
     <button onclick="document.getElementById('popup').style.display = 'none'" 
         style="
             display: block; 
@@ -112,19 +227,21 @@
 </div>
 
 <script>
-  function showPopup(message) {
-    document.getElementById('popup-message').innerText = message;
-    document.getElementById('popup').style.display = 'block';
-  }
+  function showPopup(message, title = 'Messaggio') {
+  document.getElementById('popup-title').innerText = title;
+  document.getElementById('popup-message').innerText = message;
+  document.getElementById('popup').style.display = 'block';
+}
 </script>
 
 
 <!-- Script per clonazione auto -->
 <script>
-  function showPopup(message) {
-    document.getElementById('popup-message').innerText = message;
-    document.getElementById('popup').style.display = 'block';
-  }
+ function showPopup(message, title = 'Messaggio') {
+  document.getElementById('popup-title').innerText = title;
+  document.getElementById('popup-message').innerText = message;
+  document.getElementById('popup').style.display = 'block';
+}
 
   document.querySelectorAll('.clone-car').forEach(button => {
     button.addEventListener('click', async function () {
@@ -197,7 +314,7 @@
         style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #4b5563; background-color: #374151; color: white;">
         <option value="Assegnata">Assegnata</option>
         <option value="Disponibile">Disponibile</option>
-        <option value="Disponibile">Manutenzione</option>
+        <option value="Manutenzione">Manutenzione</option>
       </select>
     </div>
 
@@ -229,7 +346,7 @@
     </div>
   </form>
 </div>
-
+<!-- Script per cambio driver e stato auto -->
 <script>
   document.querySelectorAll('.change-driver').forEach(button => {
     button.addEventListener('click', () => {
