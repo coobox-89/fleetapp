@@ -28,6 +28,29 @@
         <!-- Immagine principale con max-height ridotto a 250px -->
         <img src="<%= imagesArray[0] %>" alt="<%= car.brand %> <%= car.model %>" class="w-full object-contain rounded mb-4" style="max-height:250px;">
       </div>
+      <div class="mb-4 flex space-x-2">
+      <div class="italian-plate">
+        <!-- Sezione sinistra (EU + I) -->
+        <div class="plate-left">
+          <!-- Logo UE: sostituisci con un’immagine reale delle stelle UE, 
+               o un’icona/sprite a tua scelta -->
+          <div class="eu-logo"></div>
+          <span class="country-code">I</span>
+        </div>
+      
+        <!-- Sezione centrale con il numero di targa -->
+        <div class="plate-center">
+          <span class="plate-number"><%= car.license_plate %></span>
+        </div>
+      
+        <!-- Sezione destra (blu con cerchio) -->
+        <div class="plate-right">
+          <!-- Cerchio dorato o placeholders per province, adesivi, etc. -->
+          <div class="right-circle"></div>
+        </div>
+      </div>
+      </div>
+
       <!-- Pulsanti: Modifica ed Elimina -->
       <div class="mb-4 flex space-x-2">
         <a href="/cars/edit/<%= car.id %>" class="btn px-4 py-2">

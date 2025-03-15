@@ -1,109 +1,192 @@
 <%- include('partials/header', { title: "Insight", user: user }) %>
 
 <div class="max-w-7xl mx-auto p-4">
-  <h1 class="text-3xl font-bold mb-6 text-center">Insight Dashboard</h1>
+  <h1 class="text-3xl font-bold mb-6 text-center text-white">Insight Dashboard</h1>
 
   <!-- Summary Cards -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <!-- Totale Auto -->
     <div class="bg-gray-800 p-4 rounded shadow text-center">
-      <i class="fas fa-car-side text-3xl" style="color: #66cc66;"></i>
-      <p class="font-bold text-xl mt-2"><%= totalCars %></p>
-      <p class="text-sm">Totale Auto</p>
+      <i class="fas fa-car-side text-3xl text-green-400"></i>
+      <p class="font-bold text-xl mt-2 text-white"><%= totalCars %></p>
+      <p class="text-sm text-gray-300">Totale Auto</p>
     </div>
 
+    <!-- Auto Assegnate -->
     <div class="bg-gray-800 p-4 rounded shadow text-center">
-      <i class="fas fa-user-check text-3xl" style="color: #66cc66;"></i>
-      <p class="font-bold text-xl mt-2"><%= assignedCars %></p>
-      <p class="text-sm">Auto Assegnate</p>
+      <i class="fas fa-user-check text-3xl text-green-400"></i>
+      <p class="font-bold text-xl mt-2 text-white"><%= assignedCars %></p>
+      <p class="text-sm text-gray-300">Auto Assegnate</p>
     </div>
 
+    <!-- Auto Disponibili -->
     <div class="bg-gray-800 p-4 rounded shadow text-center">
-      <i class="fas fa-car text-3xl" style="color: #66cc66;"></i>
-      <p class="font-bold text-xl mt-2"><%= availableCars %></p>
-      <p class="text-sm">Auto Disponibili</p>
+      <i class="fas fa-car text-3xl text-green-400"></i>
+      <p class="font-bold text-xl mt-2 text-white"><%= availableCars %></p>
+      <p class="text-sm text-gray-300">Auto Disponibili</p>
     </div>
 
+    <!-- In Manutenzione -->
     <div class="bg-gray-800 p-4 rounded shadow text-center">
-      <i class="fas fa-tools text-3xl" style="color: #66cc66;"></i>
-      <p class="font-bold text-xl mt-2"><%= maintenanceCars %></p>
-      <p class="text-sm">In Manutenzione</p>
+      <i class="fas fa-tools text-3xl text-green-400"></i>
+      <p class="font-bold text-xl mt-2 text-white"><%= maintenanceCars %></p>
+      <p class="text-sm text-gray-300">In Manutenzione</p>
     </div>
 
+    <!-- Costo Mese -->
     <div class="bg-gray-800 p-4 rounded shadow text-center">
-      <i class="fas fa-dollar-sign text-3xl" style="color: #66cc66;"></i>
-      <p class="font-bold text-xl mt-2">€<%= totalMonthlyCost %></p>
-      <p class="text-sm">Totale Costo Mese</p>
+      <i class="fas fa-chart-line text-3xl text-green-400"></i>
+      <p class="font-bold text-xl mt-2 text-white">€<%= totalMonthlyCost %></p>
+      <p class="text-sm text-gray-300">Totale Costo Mese</p>
+      <span class="inline-block mt-2 px-3 py-1 text-xs font-semibold rounded-full
+        <%= monthlyCostDiff >= 0 ? 'bg-red-600 text-white' : 'bg-green-600 text-white' %>">
+        <%= monthlyCostDiff >= 0 ? '+' : '' %><%= monthlyCostDiff %>% vs mese precedente
+      </span>
     </div>
 
+    <!-- Costo Annuo -->
     <div class="bg-gray-800 p-4 rounded shadow text-center">
-      <i class="fas fa-euro-sign text-3xl" style="color: #66cc66;"></i>
-      <p class="font-bold text-xl mt-2">€<%= totalAnnualCost %></p>
-      <p class="text-sm">Totale Costo Annuo</p>
+      <i class="fas fa-euro-sign text-3xl text-green-400"></i>
+      <p class="font-bold text-xl mt-2 text-white">€<%= totalAnnualCost %></p>
+      <p class="text-sm text-gray-300">Totale Costo Annuo</p>
     </div>
   </div>
 
-  <!-- Griglia per i grafici: Affiancati su desktop, impilati su mobile -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-    <!-- Grafico: Distribuzione per Stato -->
-    <div class="bg-gray-800 p-6 rounded shadow flex flex-col items-center">
-        <h2 class="text-2xl font-bold mb-4 text-center">Distribuzione per Stato</h2>
-        <div class="w-60 h-60 flex justify-center">
-            <canvas id="statusChart"></canvas>
-        </div>
+   <!-- Sezione Grafico + Classifica affiancati -->
+<div class="flex flex-col md:flex-row gap-6 mb-8">
+  <!-- Grafico Distribuzione per Stato -->
+  <div class="bg-gray-800 p-6 rounded shadow flex-1 flex flex-col items-center">
+    <h2 class="text-2xl font-bold mb-4 text-white text-center">Distribuzione per Stato</h2>
+    <div class="flex flex-col items-center">
+      <div class="w-100 h-100">
+        <canvas id="statusChart"></canvas>
+      </div>
+      <div id="statusLegend" class="mt-4 flex gap-4 text-sm text-gray-300"></div>
     </div>
-    
-    <!-- Grafico: Classifica Auto per Marca e Modello -->
-    <div class="bg-gray-800 p-6 rounded shadow flex flex-col items-center">
-      <h2 class="text-2xl font-bold mb-4 text-center">Classifica Auto per Marca e Modello</h2>
-      <div class="w-full flex justify-center">
-        <canvas id="classificationChart"></canvas>
+  </div>
+
+ <!-- Classifica Auto -->
+<div class="bg-gray-800 p-6 rounded shadow flex-1">
+  <h2 class="text-2xl font-bold mb-4 text-white text-center">Top 5 Auto per Marca e Modello</h2>
+  <% classificationData.slice(0, 5).forEach(car => { %>
+    <div class="flex items-center bg-gray-700 p-3 rounded mb-2 hover:bg-gray-600 transition">
+      <%
+        let imgSrc = null;
+        try {
+          if (Array.isArray(car.image_url)) {
+            imgSrc = car.image_url[0];
+          } else if (typeof car.image_url === "string") {
+            const parsed = JSON.parse(car.image_url);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              imgSrc = parsed[0];
+            }
+          }
+        } catch (e) {
+          imgSrc = null;
+        }
+      %>
+
+      <% if (imgSrc) { %>
+        <img src="<%= imgSrc %>" alt="<%= car.model %>" class="w-12 h-12 rounded mr-3 object-contain p-1">
+      <% } else { %>
+        <div class="w-12 h-12 rounded bg-gray-600 flex items-center justify-center mr-3">
+          <i class="fas fa-car text-white"></i>
+        </div>
+      <% } %>
+
+      <div class="flex-1">
+        <p class="font-semibold text-white"><%= car.brand %> <%= car.model %></p>
+        <p class="text-sm text-gray-400">Quantità: <%= car.count %></p>
       </div>
     </div>
+  <% }) %>
+</div></div>
+
+
+
+  <!-- Task da Fare -->
+  <div class="bg-gray-800 p-6 rounded shadow mb-8">
+    <h2 class="text-xl font-bold mb-4 text-white"><i class="fas fa-tasks mr-2"></i>Task da Fare</h2>
+    <% if (tasks.length === 0) { %>
+      <p class="text-sm text-gray-400">Nessun task presente.</p>
+    <% } else { %>
+      <ul class="space-y-3">
+        <% tasks.forEach(task => { %>
+          <li class="flex justify-between items-center bg-gray-700 p-3 rounded hover:bg-gray-600 transition">
+            <div>
+              <p class="font-semibold text-white"><i class="fas fa-wrench mr-1"></i> <%= task.title %></p>
+              <p class="text-sm text-gray-400">Scadenza: <%= task.dueDate %></p>
+            </div>
+            <span class="px-3 py-1 text-xs font-semibold rounded-full 
+              <%= task.status === 'In ritardo' ? 'bg-red-600 text-white' : 'bg-yellow-500 text-black' %>">
+              <%= task.status %>
+            </span>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
   </div>
 
+  <!-- Scadenze -->
+  <div class="bg-gray-800 p-6 rounded shadow mb-8">
+    <h2 class="text-xl font-bold mb-4 text-white"><i class="fas fa-calendar-alt mr-2"></i>Scadenze entro 30 giorni</h2>
+    <% if (upcomingDeadlines.length === 0) { %>
+      <p class="text-sm text-gray-400">Nessuna scadenza imminente.</p>
+    <% } else { %>
+      <ul class="space-y-3">
+        <% upcomingDeadlines.forEach(item => { %>
+          <li class="flex justify-between items-center bg-gray-700 p-3 rounded hover:bg-gray-600 transition">
+            <div>
+              <p class="font-semibold text-white">
+                <i class="<%= item.type === 'Assicurazione' ? 'fas fa-shield-alt' : 'fas fa-tools' %> mr-1"></i>
+                <%= item.type %> - <%= item.vehicle %>
+              </p>
+              <p class="text-sm text-gray-400">Data: <%= item.date %></p>
+            </div>
+            <span class="px-3 py-1 text-xs font-semibold rounded-full 
+              <%= item.critical ? 'bg-red-600 text-white' : 'bg-yellow-500 text-black' %>">
+              <%= item.critical ? 'Critico' : 'Prossimo' %>
+            </span>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </div>
 
-<!-- Includi Chart.js -->
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  // Grafico a ciambella per la distribuzione degli status
+  const statusLabels = ['Assegnate', 'Disponibili', 'In Manutenzione'];
+  const statusColors = ['#66ff66', '#3498db', '#e74c3c'];
+  const statusData = [<%= assignedCars %>, <%= availableCars %>, <%= maintenanceCars %>];
+
   const ctxStatus = document.getElementById('statusChart').getContext('2d');
-  new Chart(ctxStatus, {
+  const statusChart = new Chart(ctxStatus, {
     type: 'doughnut',
     data: {
-      labels: ['Assegnate', 'Disponibili', 'In Manutenzione'],
+      labels: statusLabels,
       datasets: [{
-        data: [<%= assignedCars %>, <%= availableCars %>, <%= maintenanceCars %>],
-        backgroundColor: ['#66ff66', '#3498db', '#e74c3c']
+        data: statusData,
+        backgroundColor: statusColors
       }]
     },
     options: {
       plugins: {
-        legend: { display: false }
+        legend: { display: false } // disabilita quella predefinita
       }
     }
   });
 
-  // Grafico a barre per la classifica per marca e modello
-  const ctxClass = document.getElementById('classificationChart').getContext('2d');
-  new Chart(ctxClass, {
-    type: 'bar',
-    data: {
-      labels: <%- JSON.stringify(classificationData.map(item => item.brand + " " + item.model)) %>,
-      datasets: [{
-        label: 'Numero di Auto',
-        data: <%- JSON.stringify(classificationData.map(item => item.count)) %>,
-        backgroundColor: '#66ff66'
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        y: { beginAtZero: true }
-      }
-    }
+  // Legenda custom minimal
+  const legendContainer = document.getElementById('statusLegend');
+  statusLabels.forEach((label, i) => {
+    const item = document.createElement('div');
+    item.className = 'flex items-center gap-2';
+    item.innerHTML = `
+      <span class="w-3 h-3 rounded-full inline-block" style="background-color: ${statusColors[i]};"></span>
+      ${label} (${statusData[i]})
+    `;
+    legendContainer.appendChild(item);
   });
 </script>
 

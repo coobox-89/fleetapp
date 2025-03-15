@@ -55,16 +55,7 @@
             <i class="fa-solid fa-user-edit text-gray-600"></i>
           </button>          
         </div>
-
-        <div class="italian-plate">
-          <div class="plate-left">
-            <img src="/uploads/eu_flag.png" alt="EU" class="flag">
-          </div>
-          <div class="plate-right">
-            <span class="plate-number"><%= car.license_plate %></span>
-          </div>
-        </div>
-        
+        <p><strong>Driver:</strong> <%= car.license_plate %></p>
         <p><strong>Driver:</strong> <%= car.assigned_driver %></p>
         <p><strong>Stato:</strong>
           <% if (car.status && car.status.toLowerCase() === "assegnata") { %>

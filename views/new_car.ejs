@@ -32,20 +32,23 @@
       // Funzione per gestire le chiamate JSONP a CarQuery API
       function fetchCarQueryJSONP(cmd, params = {}) {
         return new Promise((resolve, reject) => {
-          const callbackName = `carQueryCallback_${cmd}_${Date.now()}`;
-          window[callbackName] = function (data) {
+          const callbackName = 'carQueryCallback_' + cmd + '_' + Date.now();
+          let script; // dichiarato all'inizio per essere visibile nel callback
+          window[callbackName] = function(data) {
             resolve(data);
             delete window[callbackName];
-            script.remove();
+            if (script && script.parentNode) {
+              script.parentNode.removeChild(script);
+            }
           };
-
+    
           const queryParams = new URLSearchParams({
             cmd,
             callback: callbackName,
             ...params
           });
-
-          const script = document.createElement("script");
+    
+          script = document.createElement("script");
           script.src = `https://www.carqueryapi.com/api/0.3/?${queryParams.toString()}`;
           script.onerror = function() {
             reject(new Error("Errore nel caricamento della risorsa CarQuery"));
@@ -53,11 +56,12 @@
           document.body.appendChild(script);
         });
       }
-
+    
       // Popola il dropdown delle marche
       async function populateBrands() {
         try {
           const data = await fetchCarQueryJSONP('getMakes', { sold_in_us: 0 });
+          console.log('Marche ricevute:', data);
           const brandSelect = document.getElementById('templateBrand');
           brandSelect.innerHTML = '<option value="">-- Seleziona Marca --</option>' +
             data.Makes.map(make => `<option value="${make.make_name}">${make.make_display}</option>`).join('');
@@ -65,38 +69,29 @@
           console.error('Errore nel caricamento delle marche:', error);
         }
       }
-
+    
       // Popola il dropdown dei modelli in base alla marca selezionata
       async function populateModels(brand) {
-  try {
-    // Prova a variare i parametri: se 'year' causa problemi, prova a rimuoverlo
-    const data = await fetchCarQueryJSONP('getModels', {
-      make: brand,
-      // Prova inizialmente senza 'sold_in_us' o 'year'
-      sold_in_us: 0,
-      year: new Date().getFullYear()
-    });
-    console.log(`Risposta da getModels per ${brand}:`, data);
-    const modelSelect = document.getElementById('templateModel');
-    const models = data.Models || [];
-    modelSelect.innerHTML = '<option value="">-- Seleziona Modello --</option>' +
-      models
-        .filter(model => model.model_name)
-        .map(model => `<option value="${model.model_name}">${model.model_name}</option>`)
-        .join('');
-  } catch (error) {
-    console.error('Errore nel caricamento dei modelli:', error);
-  }
-}
-
-
+        try {
+          // L'API usa il parametro "make" per filtrare i modelli
+          const data = await fetchCarQueryJSONP('getModels', { make: brand, sold_in_us: 0 });
+          console.log(`Risposta da getModels per ${brand}:`, data);
+          const modelSelect = document.getElementById('templateModel');
+          const models = data.Models || [];
+          modelSelect.innerHTML = '<option value="">-- Seleziona Modello --</option>' +
+            models.map(model => `<option value="${model.model_name}">${model.model_name}</option>`).join('');
+        } catch (error) {
+          console.error('Errore nel caricamento dei modelli:', error);
+        }
+      }
+    
       // Popola il dropdown delle versioni in base a marca e modello selezionati
       async function populateTrims(brand, model) {
         try {
           const data = await fetchCarQueryJSONP('getTrims', { make: brand, model });
+          console.log(`Versioni per ${brand} ${model}:`, data);
           const trimSelect = document.getElementById('templateTrim');
           const trims = data.Trims || [];
-          console.log(`Versioni caricate per ${brand} ${model}:`, trims);
           trimSelect.innerHTML = '<option value="">-- Seleziona Versione --</option>' +
             trims.map(trim =>
               `<option value='${JSON.stringify(trim)}'>${trim.model_trim || 'Standard'} - ${trim.model_year}</option>`
@@ -105,7 +100,7 @@
           console.error('Errore nel caricamento delle versioni:', error);
         }
       }
-
+    
       // Auto-compila il form in base alla versione scelta
       function autoFillForm(trimJSON) {
         const trim = JSON.parse(trimJSON);
@@ -117,30 +112,48 @@
         document.querySelector('input[name=horsepower]').value = trim.model_engine_power_ps;
         document.querySelector('input[name=transmission]').value = trim.model_transmission_type;
       }
-
+    
       document.addEventListener('DOMContentLoaded', () => {
         populateBrands();
-
+    
+        // Quando si seleziona una marca, carica i modelli relativi
         document.getElementById('templateBrand').addEventListener('change', (e) => {
           const brand = e.target.value;
-          console.log('Brand selezionato:', brand); 
+          console.log('Marca selezionata:', brand);
           if (brand) {
-            populateModels('Volkswagen');
+            populateModels(brand);
+            // Svuota il dropdown versioni
+            document.getElementById('templateTrim').innerHTML = '<option value="">-- Seleziona Versione --</option>';
+          } else {
+            // Se nessuna marca è selezionata, svuota i dropdown modelli e versioni
+            document.getElementById('templateModel').innerHTML = '<option value="">-- Seleziona Modello --</option>';
             document.getElementById('templateTrim').innerHTML = '<option value="">-- Seleziona Versione --</option>';
           }
         });
-
+    
+        // Quando si seleziona un modello, carica le versioni
         document.getElementById('templateModel').addEventListener('change', (e) => {
           const model = e.target.value;
           const brand = document.getElementById('templateBrand').value;
-          if (brand && model) populateTrims(brand, model);
+          if (brand && model) {
+            populateTrims(brand, model);
+          } else {
+            document.getElementById('templateTrim').innerHTML = '<option value="">-- Seleziona Versione --</option>';
+          }
         });
-
+    
+        // Quando si seleziona una versione, compila automaticamente il form
         document.getElementById('templateTrim').addEventListener('change', (e) => {
-          if (e.target.value) autoFillForm(e.target.value);
+          if (e.target.value) {
+            autoFillForm(e.target.value);
+          }
         });
       });
     </script>
+    
+    
+    
+    
 
     <!-- Sezione 1: Informazioni Base -->
     <section>
