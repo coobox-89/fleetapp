@@ -27,12 +27,22 @@
                         <p>
                           <strong>Stato:</strong>
                           <% if (car.status && car.status.toLowerCase() === "assegnata") { %>
-                            <span class="btn" style="pointer-events: none; background-color: #66cc66; color: #ffffff; font-weight: bold; padding: 0.25rem 0.75rem; border-radius: 9999px;">
-                              <%= car.status %>
-                            </span>
-                          <% } else { %>
-                            <span><%= car.status %></span>
-                          <% } %>
+            <span class="btn" style="pointer-events: none; background-color: #66cc66; color: #ffffff; font-weight: bold; padding: 0.25rem 0.75rem; border-radius: 9999px;">
+              <%= car.status %>
+            </span>
+          <% } else if (car.status && car.status.toLowerCase() === "manutenzione") { %>
+            <span class="btn" style="pointer-events: none; background-color: red; color: #ffffff; font-weight: bold; padding: 0.25rem 0.75rem; border-radius: 9999px;">
+              <%= car.status %>
+            </span>
+          <% } else if (car.status && car.status.toLowerCase() === "disponibile") { %>
+            <span class="btn" style="pointer-events: none; background-color: #374151; color: #ffffff; font-weight: bold; padding: 0.25rem 0.75rem; border-radius: 9999px;">
+              <%= car.status %>
+            </span>
+          <% } else { %>
+            <span class="btn" style="pointer-events: none; background-color: #999999; color: #ffffff; font-weight: bold; padding: 0.25rem 0.75rem; border-radius: 9999px;">
+              <%= car.status %>
+            </span>
+          <% } %>
                         </p>
                         <p>Driver: <%= car.assigned_driver %></p>
                       </div>

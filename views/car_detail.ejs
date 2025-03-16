@@ -70,8 +70,110 @@
           </svg>
         </div>
         <p class="mt-2 text-xs">Clicca sullo schema per segnalare o rimuovere punti di danno. Se clicchi nuovamente su un marker (entro 10px) verrà rimosso.</p>
+        <div class="mb-4 flex space-x-2">
+          <% if (vendor && vendor.image_url) { 
+          let cleanedImageUrl;
+          try {
+            const parsed = JSON.parse(vendor.image_url);
+            cleanedImageUrl = Array.isArray(parsed) ? parsed[0] : parsed;
+          } catch (e) {
+            cleanedImageUrl = vendor.image_url;
+          }
+     %>
+     </div>
+       <div>
+         <img src="<%= cleanedImageUrl %>" alt="Logo Vendor" class="w-40 h-auto mx-auto">
+        <!-- <h2 class="text-xl font-bold mb-4">Supporto Noleggio</h2> -->
+       </div>
+     <% } %>
       </section>
     </div>
+
+    <!-- Popup storico chilometri -->
+<div id="km-history-popup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+  <div class="bg-gray-800 text-white rounded-lg shadow-lg w-full max-w-2xl p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-bold">Storico chilometri</h2>
+      <button onclick="closeKmHistoryPopup()" class="text-white text-2xl">&times;</button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead>
+          <tr class="border-b border-gray-600">
+            <th class="pb-2">Data</th>
+            <th class="pb-2">Km Precedenti</th>
+            <th class="pb-2">Km Nuovi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% kmHistory.slice(0, 10).forEach(record => { %>
+            <tr class="border-b border-gray-700">
+              <td class="py-2"><%= new Date(record.timestamp).toLocaleString() %></td>
+              <td class="py-2"><%= record.old_km %></td>
+              <td class="py-2"><%= record.new_km %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openKmHistoryPopup() {
+    document.getElementById('km-history-popup').classList.remove('hidden');
+  }
+
+  function closeKmHistoryPopup() {
+    document.getElementById('km-history-popup').classList.add('hidden');
+  }
+</script>
+
+<!-- Popup Storico Driver -->
+<div id="driver-history-popup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+  <div class="bg-gray-800 text-white rounded-lg shadow-lg w-full max-w-2xl p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-bold">Storico Driver</h2>
+      <button onclick="closeDriverHistoryPopup()" class="text-white text-2xl">&times;</button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead>
+          <tr class="border-b border-gray-600">
+            <th class="pb-2">Data Assegnazione</th>
+            <th class="pb-2">Driver</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (driverHistory && driverHistory.length > 0) { %>
+            <% driverHistory.slice(0, 10).forEach(record => { %>
+              <tr class="border-b border-gray-700">
+                <td class="py-2"><%= new Date(record.updated_at).toLocaleString() %></td>
+                <td class="py-2"><%= record.new_driver %></td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="2" class="py-4 text-center text-gray-400">Nessun driver storico disponibile</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openDriverHistoryPopup() {
+    document.getElementById('driver-history-popup').classList.remove('hidden');
+  }
+
+  function closeDriverHistoryPopup() {
+    document.getElementById('driver-history-popup').classList.add('hidden');
+  }
+</script>
+
+
 
     <!-- Colonna destra: Dati dell'auto -->
     <div class="md:w-2/3 md:ml-6">
@@ -82,7 +184,14 @@
           <div class="whitespace-nowrap"><span class="font-bold">Marca:</span> <span class="break-words"><%= car.brand %></span></div>
           <div class="whitespace-nowrap"><span class="font-bold">Modello:</span> <span class="break-words"><%= car.model %></span></div>
           <div class="whitespace-nowrap"><span class="font-bold">Targa:</span> <span class="break-words"><%= car.license_plate %></span></div>
-          <div class="whitespace-nowrap"><span class="font-bold">Driver:</span> <span class="break-words"><%= car.assigned_driver %></span></div>
+          <div class="whitespace-nowrap flex items-center space-x-2">
+            <span class="font-bold">Driver:</span>
+            <span class="break-words"><%= car.assigned_driver %></span>
+            <button type="button" onclick="openDriverHistoryPopup()" title="Storico driver" class="text-gray-400 hover:text-white">
+              <i class="fa-solid fa-id-card"></i>
+            </button>                
+          </div>
+          
           <div class="whitespace-nowrap"><span class="font-bold">Colore:</span> <span class="break-words"><%= car.color %></span></div>
         </div>
       </section>
@@ -104,7 +213,13 @@
         <h2 class="text-2xl font-bold border-b border-gray-600 pb-2 mb-4">Contratto e Utilizzo</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div class="whitespace-nowrap"><span class="font-bold">Ultima manutenzione:</span> <span class="break-words"><%= car.last_maintenance_date %></span></div>
-          <div class="whitespace-nowrap"><span class="font-bold">Chilometraggio:</span> <span class="break-words"><%= car.mileage %></span></div>
+          <div class="whitespace-nowrap flex items-center space-x-2">
+            <span class="font-bold">Chilometraggio:</span>
+            <span class="break-words"><%= car.mileage %> km</span>
+            <button onclick="openKmHistoryPopup()" title="Storico chilometri" class="text-gray-400 hover:text-white">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+            </button>
+          </div>          
           <div class="whitespace-nowrap"><span class="font-bold">Inizio contratto:</span> <span class="break-words"><%= car.contract_start_date %></span></div>
           <div class="whitespace-nowrap"><span class="font-bold">Scadenza contratto:</span> <span class="break-words"><%= car.contract_end_date %></span></div>
           <div class="whitespace-nowrap"><span class="font-bold">Costo mensile:</span> <span class="break-words"><%= car.monthly_cost %></span></div>
@@ -184,37 +299,12 @@
   }
 </script>
 
-<!-- Script per la Scheda Danni Interattiva con persistenza -->
+<!-- Script per la Scheda Danni Interattiva con salvataggio su DB -->
 <script>
-  const markersStorageKey = "damageMarkers_<%= car.id %>";
   let damageMarkers = [];
 
-  function loadDamageMarkers() {
-    const stored = localStorage.getItem(markersStorageKey);
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch(e) {
-        return [];
-      }
-    }
-    return [];
-  }
-
-  function saveDamageMarkers(markers) {
-    localStorage.setItem(markersStorageKey, JSON.stringify(markers));
-  }
-
-  function updateLocalStorageMarkers() {
-    const markersData = damageMarkers.map(marker => ({
-      cx: marker.getAttribute("cx"),
-      cy: marker.getAttribute("cy")
-    }));
-    saveDamageMarkers(markersData);
-  }
-
   function renderDamageMarkers() {
-    const markersData = loadDamageMarkers();
+    const markersData = <%- JSON.stringify(car.damage_markers || []) %>;
     markersData.forEach(data => {
       const marker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
       marker.setAttribute("cx", data.cx);
@@ -262,8 +352,32 @@
       schematic.appendChild(newMarker);
       damageMarkers.push(newMarker);
     }
-    updateLocalStorageMarkers();
+    updateDatabaseDamageMarkers();
   });
+
+  async function updateDatabaseDamageMarkers() {
+    const markersData = damageMarkers.map(marker => ({
+      cx: marker.getAttribute("cx"),
+      cy: marker.getAttribute("cy")
+    }));
+
+    try {
+      const response = await fetch("/cars/save-damage/<%= car.id %>", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ damage_markers: markersData })
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        alert("Errore nel salvataggio dei danni: " + result.message);
+      }
+    } catch (err) {
+      console.error("Errore fetch:", err);
+    }
+  }
 </script>
 
 <%- include('partials/footer') %>
