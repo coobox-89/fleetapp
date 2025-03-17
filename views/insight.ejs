@@ -87,7 +87,7 @@
       %>
 
       <% if (imgSrc) { %>
-        <img src="<%= imgSrc %>" alt="<%= car.model %>" class="w-12 h-12 rounded mr-3 object-contain p-1">
+        <img src="<%= imgSrc %>" alt="<%= car.model %>" class="w-12 h-12 rounded mr-3 object-contain bg-gray-800> p-1">
       <% } else { %>
         <div class="w-12 h-12 rounded bg-gray-600 flex items-center justify-center mr-3">
           <i class="fas fa-car text-white"></i>
@@ -102,11 +102,39 @@
   <% }) %>
 </div></div>
 
-
+<!-- Sezione Vendor + Task affiancati -->
+<div class="flex flex-col md:flex-row gap-6 mb-8">
+  <!-- Classifica Vendor -->
+  <div class="bg-gray-800 p-6 rounded shadow flex-1">
+    <h2 class="text-2xl font-bold mb-4 text-white text-center">Top 5 Vendor</h2>
+    <% topVendors.forEach(vendor => { 
+      let vendorLogo = '';
+      try {
+        const parsed = JSON.parse(vendor.image_url);
+        vendorLogo = Array.isArray(parsed) ? parsed[0] : parsed;
+      } catch (e) {
+        vendorLogo = vendor.image_url;
+      }
+    %>
+      <div class="flex items-center bg-gray-700 p-3 rounded mb-2 hover:bg-gray-600 transition">
+        <% if (vendorLogo) { %>
+          <img src="<%= vendorLogo %>" alt="<%= vendor.name %>" class="w-12 h-12 rounded mr-3 object-contain bg-gray-800 p-1">
+        <% } else { %>
+          <div class="w-12 h-12 rounded bg-gray-600 flex items-center justify-center mr-3">
+            <i class="fas fa-building text-white"></i>
+          </div>
+        <% } %>
+        <div class="flex-1">
+          <p class="font-semibold text-white"><%= vendor.name %></p>
+          <p class="text-sm text-gray-400">Auto: <%= vendor.count %></p>
+        </div>
+      </div>
+    <% }) %>
+  </div>
 
   <!-- Task da Fare -->
-  <div class="bg-gray-800 p-6 rounded shadow mb-8">
-    <h2 class="text-xl font-bold mb-4 text-white"><i class="fas fa-tasks mr-2"></i>Task da Fare</h2>
+  <div class="bg-gray-800 p-6 rounded shadow flex-1">
+    <h2 class="text-2xl font-bold mb-4 text-white text-center"><i class="fas fa-tasks mr-2"></i>Task da Fare</h2>
     <% if (tasks.length === 0) { %>
       <p class="text-sm text-gray-400">Nessun task presente.</p>
     <% } else { %>
@@ -126,6 +154,8 @@
       </ul>
     <% } %>
   </div>
+</div>
+
 
   <!-- Scadenze -->
   <div class="bg-gray-800 p-6 rounded shadow mb-8">

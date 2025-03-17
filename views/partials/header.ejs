@@ -58,8 +58,8 @@
                                                       }
 
                                                       .italian-plate {
-  width: 260px;
-  height: 60px;
+  inline-size: 260px;
+  block-size: 60px;
   background: linear-gradient(to bottom, #aaa, #f0f0f0);
   border-radius: 6px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
@@ -72,8 +72,8 @@
 /* Sezione sinistra: area blu con logo UE e lettera "I" */
 .plate-left {
   background: linear-gradient(to bottom, #003399, #002b7a);
-  width: 35px;
-  height: 100%;
+  inline-size: 35px;
+  block-size: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -81,9 +81,9 @@
 }
 
 .eu-logo {
-  width: 14px;
-  height: 14px;
-  margin-bottom: 2px;
+  inline-size: 14px;
+  block-size: 14px;
+  margin-block-end: 2px;
   background: url("/uploads/eu_flag.png") no-repeat center;
   background-size: cover;
 }
@@ -114,16 +114,16 @@
 /* Sezione destra: area blu per eventuali elementi grafici */
 .plate-right {
   background: linear-gradient(to bottom, #003399, #002b7a);
-  width: 35px;
-  height: 100%;
+  inline-size: 35px;
+  block-size: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .right-circle {
-  width: 14px;
-  height: 14px;
+  inline-size: 14px;
+  block-size: 14px;
   border: 2px solid #FFD700;
   border-radius: 50%;
   background: transparent;

@@ -40,12 +40,27 @@
     %>
       <div class="bg-gray-800 p-4 rounded shadow hover:shadow-lg transition">
         <div class="relative" data-images='<%= JSON.stringify(imagesArray) %>' data-carousel-index="0" id="carousel-<%= car.id %>">
-          <img src="<%= imagesArray[0] %>" id="img-<%= car.id %>" alt="<%= car.brand %> <%= car.model %>" class="rounded object-contain mb-4" style="width:10cm; height:10cm;">
+          <img src="<%= imagesArray[0] %>" id="img-<%= car.id %>" alt="<%= car.brand %> <%= car.model %>" class="rounded object-contain mb-4" style="inline-size:10cm; block-size:10cm;">
           <% if (imagesArray.length > 1) { %>
             <button class="absolute left-0 top-1/2 transform -translate-y-1/2 text-white text-2xl hover:text-gray-300 focus:outline-none carousel-prev" data-carousel-id="<%= car.id %>" style="background: transparent;">&#10094;</button>
             <button class="absolute right-0 top-1/2 transform -translate-y-1/2 text-white text-2xl hover:text-gray-300 focus:outline-none carousel-next" data-carousel-id="<%= car.id %>" style="background: transparent;">&#10095;</button>
           <% } %>
         </div>
+        <!-- Logo vendor (se presente) -->
+        <div class="mb-4">
+          <% if (car.vendor && car.vendor.image_url) { 
+            let cleanedImageUrl;
+            try {
+              const parsed = JSON.parse(car.vendor.image_url);
+              cleanedImageUrl = Array.isArray(parsed) ? parsed[0] : parsed;
+            } catch (e) {
+              cleanedImageUrl = car.vendor.image_url;
+            }
+          %>
+            <img src="<%= cleanedImageUrl %>" alt="Logo Vendor" class="w-40 h-auto mx-auto mb-2">
+          <% } %>
+        </div>
+        
         <div class="flex items-center space-x-2">
           <h2 class="text-xl font-bold"><%= car.brand %> <%= car.model %></h2>
           
@@ -104,31 +119,31 @@
 <div id="driver-popup" style="
   display: none;
   position: fixed;
-  top: 50%;
-  left: 50%;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
   transform: translate(-50%, -50%);
   background: #111826;
   padding: 24px;
   border-radius: 12px;
   z-index: 1000;
   color: white;
-  width: 320px;
+  inline-size: 320px;
 ">
-  <h2 style="font-weight: bold; font-size: 20px; margin-bottom: 16px;">Modifica Driver</h2>
+  <h2 style="font-weight: bold; font-size: 20px; margin-block-end: 16px;">Modifica Driver</h2>
   <form id="change-driver-form" class="space-y-4">
     <input type="hidden" id="driver-car-id" name="car_id" />
 
     <div class="flex flex-col items-start">
       <label for="new-driver">Nuovo Driver</label>
       <input type="text" id="new-driver" name="new_driver"
-        style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #4b5563; background-color: #374151; color: white;"
+        style="inline-size: 100%; padding: 10px; border-radius: 6px; border: 1px solid #4b5563; background-color: #374151; color: white;"
         placeholder="Inserisci nome driver" required />
     </div>
 
     <div class="flex flex-col items-start">
       <label for="new-status">Stato</label>
       <select id="new-status" name="new_status"
-        style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #4b5563; background-color: #374151; color: white;">
+        style="inline-size: 100%; padding: 10px; border-radius: 6px; border: 1px solid #4b5563; background-color: #374151; color: white;">
         <option value="Assegnata">Assegnata</option>
         <option value="Disponibile">Disponibile</option>
         <option value="Manutenzione">Manutenzione</option>
@@ -143,14 +158,14 @@
 </div>
 
 <!-- Include popup chilometri UNA sola volta -->
-<div id="km-popup" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111826; padding: 24px; border-radius: 12px; z-index: 1000; color: white; width: 320px;">
-  <h2 style="font-weight: bold; font-size: 20px; margin-bottom: 16px;">Modifica Chilometri</h2>
+<div id="km-popup" style="display: none; position: fixed; inset-block-start: 50%; inset-inline-start: 50%; transform: translate(-50%, -50%); background: #111826; padding: 24px; border-radius: 12px; z-index: 1000; color: white; inline-size: 320px;">
+  <h2 style="font-weight: bold; font-size: 20px; margin-block-end: 16px;">Modifica Chilometri</h2>
   <form id="change-km-form" class="space-y-4">
     <input type="hidden" name="car_id" id="km-car-id" />
     <div class="flex flex-col items-start">
       <label for="new-km">Nuovi Chilometri</label>
       <input type="number" id="new-km" name="new_km" required
-        style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #4b5563; background-color: #374151; color: white;" />
+        style="inline-size: 100%; padding: 10px; border-radius: 6px; border: 1px solid #4b5563; background-color: #374151; color: white;" />
     </div>
     <div class="flex justify-between mt-4 space-x-2">
       <button type="submit" style="flex: 1; background-color: #66cc66; color: white; font-weight: bold; padding: 10px; border: none; border-radius: 6px;">Salva</button>
@@ -160,10 +175,10 @@
 </div>
 
 <!-- Popup per messaggi -->
-<div id="popup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:#111826; padding:20px; border-radius:10px; z-index:1000; text-align:center;">
+<div id="popup" style="display:none; position:fixed; inset-block-start:50%; inset-inline-start:50%; transform:translate(-50%, -50%); background:#111826; padding:20px; border-radius:10px; z-index:1000; text-align:center;">
   <h2 id="popup-title" style="color:white; font-weight:bold;">Messaggio</h2>
   <p id="popup-message" style="font-size:18px; color:white;"></p>
-  <button onclick="document.getElementById('popup').style.display='none'" style="margin-top:10px; background-color:red; color:white; font-weight:bold; border:none; padding:10px 20px; border-radius:5px;">Chiudi</button>
+  <button onclick="document.getElementById('popup').style.display='none'" style="margin-block-start:10px; background-color:red; color:white; font-weight:bold; border:none; padding:10px 20px; border-radius:5px;">Chiudi</button>
 </div>
 
 <script>

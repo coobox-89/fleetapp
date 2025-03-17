@@ -26,7 +26,7 @@
       %>
       <div class="mb-4">
         <!-- Immagine principale con max-height ridotto a 250px -->
-        <img src="<%= imagesArray[0] %>" alt="<%= car.brand %> <%= car.model %>" class="w-full object-contain rounded mb-4" style="max-height:250px;">
+        <img src="<%= imagesArray[0] %>" alt="<%= car.brand %> <%= car.model %>" class="w-full object-contain rounded mb-4" style="max-block-size:250px;">
       </div>
       <div class="mb-4 flex space-x-2">
       <div class="italian-plate">
@@ -64,7 +64,7 @@
       <section class="mb-4">
         <h2 class="text-xl font-bold mb-2">Segnala Danno</h2>
         <!-- Il container usa l'immagine fissa che comprende già tutte le viste -->
-        <div id="damageSchematicContainer" class="relative mx-auto" style="width:300px; height:180px; border:2px solid #66cc66;">
+        <div id="damageSchematicContainer" class="relative mx-auto" style="inline-size:300px; block-size:180px; border:2px solid #66cc66;">
           <svg id="damageSchematic" width="300" height="180" viewBox="0 0 300 180">
             <image href="/assets/scheda-danni.png" x="0" y="0" width="300" height="180" preserveAspectRatio="xMidYMid meet" />
           </svg>
@@ -85,7 +85,7 @@
          <img src="<%= cleanedImageUrl %>" alt="Logo Vendor" class="w-40 h-auto mx-auto">
         <!-- <h2 class="text-xl font-bold mb-4">Supporto Noleggio</h2> -->
        </div>
-     <% } %>
+       <% } %>
       </section>
     </div>
 
