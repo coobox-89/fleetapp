@@ -7,11 +7,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import fs from "fs";
+import moment from 'moment'; 
 import { parse } from "csv-parse";
 dotenv.config();
-
-console.log("Tutte le variabili ambiente:", process.env);
-
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,6 +39,7 @@ app.set("views", path.join(__dirname, "views"));
 // Cartelle per upload file statici
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/assets", express.static(path.join(__dirname, "assets")));
+
 
 // Configurazione di multer per il caricamento dei file
 const allowedMimeTypes = [
@@ -90,73 +89,283 @@ const checkAuth = async (req, res, next) => {
 
 // --- ROTTE STATICHE (definite PRIMA delle dinamiche) ---
 
-// Rotta cambio driver (rapido)
-app.post('/cars/change-driver/:id', checkAuth, async (req, res) => {
+// Funzione riusabile per tracciare lo storico driver
+async function saveDriverHistory(carId, oldDriver, newDriver) {
+  if (!oldDriver || !newDriver || oldDriver === newDriver) return;
+  await supabase.from("car_driver_history").insert([
+    {
+      car_id: carId,
+      old_driver: oldDriver,
+      new_driver: newDriver,
+      updated_at: new Date().toISOString(),
+    },
+  ]);
+}
+
+// Rotta cambio driver (rapido da dashboard)
+app.post("/cars/change-driver/:id", checkAuth, async (req, res) => {
   const { id } = req.params;
   const { assigned_driver, status } = req.body;
 
   try {
+    const { data: car, error: fetchError } = await supabase
+      .from("cars")
+      .select("assigned_driver")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !car) throw new Error("Auto non trovata");
+
+    await saveDriverHistory(id, car.assigned_driver, assigned_driver);
+
     const { error } = await supabase
-      .from('cars')
+      .from("cars")
       .update({ assigned_driver, status })
-      .eq('id', id);
+      .eq("id", id);
 
     if (error) throw error;
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Errore aggiornamento driver:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
+// Modifica tramite edit_car
+app.post("/cars/edit/:id", checkAuth, upload.array("images", 5), async (req, res) => {
+  const { id } = req.params;
+  const {
+    brand, model, year, license_plate, fuel_type,
+    engine_capacity, horsepower, transmission, status,
+    last_maintenance_date, mileage, contract_start_date,
+    contract_end_date, monthly_cost, annual_cost,
+    insurance_expiry_date, insurance_policy_number, inspection_date,
+    color, assigned_driver, leasing_vendor_id, additional_notes
+  } = req.body;
+
+  let image_urls = [];
+  if (req.files && req.files.length > 0) {
+    image_urls = req.files.map((file) => "/uploads/" + file.filename);
+  }
+  let imagesJSON = image_urls.length > 0 ? JSON.stringify(image_urls) : null;
+
+  const { data: car, error: fetchError } = await supabase
+    .from("cars")
+    .select("assigned_driver")
+    .eq("id", id)
+    .single();
+
+  if (fetchError) return res.send("Errore nel recuperare l'auto: " + fetchError.message);
+
+  await saveDriverHistory(id, car.assigned_driver, assigned_driver);
+
+  const updateData = {
+    brand,
+    model,
+    year: parseInt(year),
+    license_plate,
+    fuel_type,
+    engine_capacity,
+    horsepower,
+    transmission,
+    status,
+    last_maintenance_date,
+    mileage: mileage ? parseInt(mileage) : null,
+    contract_start_date,
+    contract_end_date,
+    monthly_cost: monthly_cost ? parseFloat(monthly_cost) : null,
+    annual_cost: annual_cost ? parseFloat(annual_cost) : null,
+    insurance_expiry_date,
+    insurance_policy_number,
+    inspection_date,
+    color,
+    assigned_driver,
+    leasing_vendor_id: leasing_vendor_id || null,
+    additional_notes,
+  };
+  if (imagesJSON) updateData.image_url = imagesJSON;
+
+  const { error: updateError } = await supabase.from("cars").update(updateData).eq("id", id);
+  if (updateError) return res.send("Errore durante l'aggiornamento: " + updateError.message);
+  res.redirect("/cars/" + id);
+});
+
+//Rotta per aggiornare i km
+app.post('/cars/change-km/:id', checkAuth, async (req, res) => {
+  const carId = req.params.id;
+  const { mileage } = req.body;
+
+  try {
+    const newKm = parseInt(mileage);
+    if (isNaN(newKm) || newKm < 0) {
+      return res.status(400).json({ success: false, message: 'Valore chilometri non valido' });
+    }
+
+    // Ottieni i km attuali
+    const { data: car, error: fetchError } = await supabase
+      .from('cars')
+      .select('mileage')
+      .eq('id', carId)
+      .single();
+
+    if (fetchError || !car) {
+      return res.status(404).json({ success: false, message: 'Auto non trovata' });
+    }
+    
+    // Verifica se i chilometri sono effettivamente cambiati
+    if (car.mileage === newKm) {
+      return res.json({ success: true, message: 'Nessuna modifica necessaria' });
+    }
+
+    // Salva lo storico dei km
+    await supabase.from('car_km_history').insert([{
+      car_id: carId,
+      old_km: car.mileage,
+      new_km: newKm,
+      updated_at: new Date().toISOString()
+    }]);
+
+    // Aggiorna i km nella tabella cars
+    const { error: updateError } = await supabase
+      .from('cars')
+      .update({ mileage: newKm })
+      .eq('id', carId);
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Errore interno del server' });
+  }
+});
+
+
 // Rotta per la dashboard Insight
 app.get("/insight", checkAuth, async (req, res) => {
   try {
-    // Totale auto (usando count nella select)
-    const { count: totalCount, error: totalError } = await supabase
+    // Totali
+    const { count: totalCount } = await supabase
       .from("cars")
-      .select("*", { count: 'exact', head: true });
-    if (totalError) throw totalError;
+      .select("*", { count: "exact", head: true });
 
-    // Auto assegnate
-    const { count: assignedCount, error: assignedError } = await supabase
+    const { count: assignedCount } = await supabase
       .from("cars")
-      .select("*", { count: 'exact', head: true })
+      .select("*", { count: "exact", head: true })
       .ilike("status", "assegnata");
-    if (assignedError) throw assignedError;
 
-    // Auto disponibili (status "disponibile")
-    const { count: availableCount, error: availableError } = await supabase
+    const { count: availableCount } = await supabase
       .from("cars")
-      .select("*", { count: 'exact', head: true })
+      .select("*", { count: "exact", head: true })
       .ilike("status", "disponibile");
-    if (availableError) throw availableError;
 
-    // Auto in manutenzione (status "in manutenzione")
-    const { count: maintenanceCount, error: maintenanceError } = await supabase
+    const { count: maintenanceCount } = await supabase
       .from("cars")
-      .select("*", { count: 'exact', head: true })
-      .ilike("status", "in manutenzione");
-    if (maintenanceError) throw maintenanceError;
+      .select("*", { count: "exact", head: true })
+      .ilike("status", "%manutenzione%");
 
-    // Totale costo mese - utilizzo di RPC per sommare i costi (supponiamo che l'RPC "sum_monthly_cost" restituisca [{ sum: ... }])
-    const { data: monthlyCostData, error: monthlyCostError } = await supabase.rpc("sum_monthly_cost");
-    if (monthlyCostError) throw monthlyCostError;
-    const totalMonthlyCost = monthlyCostData && monthlyCostData.length > 0 ? monthlyCostData[0].sum : 0;
+    // Costi
+    const { data: monthlyCostData } = await supabase.rpc("sum_monthly_cost");
+    const totalMonthlyCost = monthlyCostData?.[0]?.sum || 0;
 
-    // Totale costo annuo
-    const { data: annualCostData, error: annualCostError } = await supabase.rpc("sum_annual_cost");
-    if (annualCostError) throw annualCostError;
-    const totalAnnualCost = annualCostData && annualCostData.length > 0 ? annualCostData[0].sum : 0;
+    const { data: prevMonthData } = await supabase.rpc("sum_previous_month_cost");
+    const previousMonthCost = prevMonthData?.[0]?.sum || 0;
 
-    // Classifica auto per marca e modello - supponiamo un RPC "classification_by_model_brand" che restituisce array di { brand, model, count }
-    const { data: classificationData, error: classificationError } = await supabase.rpc("classification_by_model_brand");
-    if (classificationError) throw classificationError;
+    const monthlyCostDiff = previousMonthCost > 0
+      ? (((totalMonthlyCost - previousMonthCost) / previousMonthCost) * 100).toFixed(2)
+      : "0.00";
 
-    // Km per ogni auto: selezioniamo id, brand, model e mileage
-    const { data: mileageData, error: mileageError } = await supabase.from("cars").select("id, brand, model, mileage");
-    if (mileageError) throw mileageError;
+    const { data: annualCostData } = await supabase.rpc("sum_annual_cost");
+    const totalAnnualCost = annualCostData?.[0]?.sum || 0;
+
+    // Classificazione auto
+    const { data: classificationRaw } = await supabase.rpc("classification_by_model_brand");
+
+const classificationData = [];
+
+for (const item of classificationRaw) {
+  const { data: matchingCars } = await supabase
+    .from("cars")
+    .select("image_url")
+    .eq("brand", item.brand)
+    .eq("model", item.model)
+    .limit(1);
+
+  classificationData.push({
+    ...item,
+    image_url: matchingCars?.[0]?.image_url || null
+  });
+}
+    // Top vendors
+const { data: topVendorData, error: topVendorsError } = await supabase
+.from("cars")
+.select("leasing_vendor_id, vendors(id, name, image_url)")
+.eq("status", "Assegnata")
+.limit(1000);
+
+const vendorCountMap = {};
+topVendorData.forEach(entry => {
+const vendor = entry.vendors;
+if (vendor) {
+  const key = vendor.id;
+  if (!vendorCountMap[key]) {
+    vendorCountMap[key] = {
+      id: vendor.id,
+      name: vendor.name,
+      image_url: vendor.image_url,
+      count: 0,
+    };
+  }
+  vendorCountMap[key].count += 1;
+}
+});
+
+const topVendors = Object.values(vendorCountMap).sort((a, b) => b.count - a.count).slice(0, 5);
+
+
+    // TASKS da fare (simulati per ora, poi li collegheremo a una tabella)
+    const tasks = [
+      { title: "Cambio gomme - Kia Sportage", dueDate: "2025-04-01", status: "In ritardo" },
+      { title: "Tassa circolazione - GR390RY", dueDate: "2025-03-20", status: "Da fare" }
+    ];
+
+    // Scadenze veicoli (es. assicurazione, revisione) da Supabase
+    const { data: deadlineData } = await supabase
+      .from("cars")
+      .select("brand, model, insurance_expiry_date, inspection_date");
+
+    const upcomingDeadlines = [];
+
+    const today = moment();
+
+    deadlineData?.forEach(car => {
+      const vehicle = `${car.brand} ${car.model}`;
+
+      if (car.insurance_expiry_date) {
+        const diff = moment(car.insurance_expiry_date).diff(today, "days");
+        if (diff <= 30) {
+          upcomingDeadlines.push({
+            type: "Assicurazione",
+            vehicle,
+            date: car.insurance_expiry_date,
+            critical: diff <= 7
+          });
+        }
+      }
+
+      if (car.inspection_date) {
+        const diff = moment(car.inspection_date).diff(today, "days");
+        if (diff <= 30) {
+          upcomingDeadlines.push({
+            type: "Revisione",
+            vehicle,
+            date: car.inspection_date,
+            critical: diff <= 7
+          });
+        }
+      }
+    });
 
     res.render("insight", {
       totalCars: totalCount,
@@ -165,9 +374,12 @@ app.get("/insight", checkAuth, async (req, res) => {
       maintenanceCars: maintenanceCount,
       totalMonthlyCost,
       totalAnnualCost,
+      monthlyCostDiff,
       classificationData,
-      mileageData,
-      user: req.user
+      tasks,
+      upcomingDeadlines,
+      user: req.user,
+      topVendors,
     });
   } catch (err) {
     res.send("Errore nel recuperare i dati: " + err.message);
@@ -183,7 +395,6 @@ app.get("/cars/new", checkAuth, async (req, res) => {
     .from("vendors")
     .select("*");
   if (vendorError) {
-    console.error("Errore nel recuperare i vendors:", vendorError);
     return res.render("new_car", { user: req.user, error: vendorError.message, vendors: [] });
   }
   res.render("new_car", { user: req.user, error: null, vendors });
@@ -210,8 +421,6 @@ app.post(
   checkAuth,
   upload.fields([{ name: "images", maxCount: 10 }]),
   async (req, res) => {
-    console.log("req.body:", req.body);
-    
     const { brand, model, year, license_plate, fuel_type } = req.body;
     let image_urls = [];
     if (req.files && req.files.images) {
@@ -247,11 +456,8 @@ app.post(
     try {
       // Verifica se il file è stato caricato
       if (!req.file) {
-        console.error("❌ Nessun file ricevuto.");
         return res.render("import_cars", { user: req.user, error: "Errore: Nessun file ricevuto." });
       }
-
-      console.log(`📂 File ricevuto: ${req.file.path}`);
 
       const filePath = req.file.path;
       const importedCars = [];
@@ -259,7 +465,6 @@ app.post(
       // Verifica contenuto del file
       const fileContent = fs.readFileSync(filePath, "utf8");
       if (!fileContent.trim()) {
-        console.error("❌ Il file è vuoto!");
         return res.render("import_cars", { user: req.user, error: "Errore: Il file è vuoto!" });
       }
 
@@ -268,7 +473,6 @@ app.post(
         .pipe(parse({ columns: true, delimiter: ",", trim: true }))
         .on("data", (row) => {
           if (!row.brand) {
-            console.warn("⚠️ Riga con brand mancante trovata:", row);
             row.brand = "Sconosciuto"; // Preveniamo l'errore di Supabase
           }
 
@@ -282,140 +486,116 @@ app.post(
         })
         .on("end", async () => {
           try {
-            console.log(`✅ ${importedCars.length} auto pronte per l'inserimento.`);
-            
             const { error } = await supabase.from("cars").insert(importedCars);
             if (error) throw error;
 
             fs.unlinkSync(filePath); // Cancella il file dopo l'import
             res.redirect("/dashboard");
           } catch (dbError) {
-            console.error("❌ Errore in Supabase:", dbError.message);
             res.render("import_cars", { user: req.user, error: `Errore database: ${dbError.message}` });
           }
         })
         .on("error", (csvError) => {
-          console.error("❌ Errore nella lettura del CSV:", csvError.message);
           res.render("import_cars", { user: req.user, error: `Errore CSV: ${csvError.message}` });
         });
 
     } catch (error) {
-      console.error("❌ Errore generale:", error.message);
       res.render("import_cars", { user: req.user, error: "Errore interno del server." });
     }
   }
 );
 
 
-// Rotta per visualizzare i dettagli di una singola auto
+
+// Rotta per visualizzare la pagina dei dettagli auto con kmHistory e driverHistory
 app.get("/cars/:id", checkAuth, async (req, res) => {
   const { id } = req.params;
+
   const { data: car, error } = await supabase
     .from("cars")
     .select("*")
     .eq("id", id)
     .single();
-  if (error)
-    return res.send(
-      "Errore nel recuperare i dettagli dell'auto: " + error.message
-    );
-  res.render("car_detail", { car, user: req.user });
-});
 
-// Rotte per la modifica (GET e POST)
+  if (error) {
+    return res.send("Errore nel recuperare i dettagli dell'auto: " + error.message);
+  }
+
+  const { data: kmHistory, error: historyError } = await supabase
+    .from("car_km_history")
+    .select("*")
+    .eq("car_id", id)
+    .order("updated_at", { ascending: false });
+
+  if (historyError) {
+    return res.send("Errore nel recuperare lo storico km: " + historyError.message);
+  }
+
+  const { data: driverHistory, error: driverError } = await supabase
+    .from("car_driver_history")
+    .select("*")
+    .eq("car_id", id)
+    .order("updated_at", { ascending: false });
+
+  if (driverError) {
+    return res.send("Errore nel recuperare lo storico driver: " + driverError.message);
+  }
+
+  let vendor = null;
+  if (car.leasing_vendor_id) {
+    const { data: vendorData, error: vendorError } = await supabase
+      .from("vendors")
+      .select("*")
+      .eq("id", car.leasing_vendor_id)
+      .single();
+
+    if (!vendorError && vendorData) {
+      vendor = vendorData;
+    }
+  }
+  
+  
+
+  res.render("car_detail", {
+    car,
+    user: req.user,
+    kmHistory,
+    driverHistory,
+    vendor,
+  });
+});
+// Rotta per mostrare il form di modifica con i dati precompilati
 app.get("/cars/edit/:id", checkAuth, async (req, res) => {
   const { id } = req.params;
-  const { data: car, error } = await supabase
-    .from("cars")
-    .select("*")
-    .eq("id", id)
-    .single();
-  if (error) return res.send("Errore nel recuperare l'auto: " + error.message);
-  const { data: vendors, error: vendorError } = await supabase
-    .from("vendors")
-    .select("*");
-  if (vendorError)
-    return res.send("Errore nel recuperare i vendors: " + vendorError.message);
-  res.render("edit_car", { car, vendors, error: null, user: req.user });
+
+  try {
+    const { data: car, error } = await supabase
+      .from("cars")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error || !car) {
+      throw new Error("Auto non trovata o errore nel recupero");
+    }
+
+    // Recupera i vendors (opzionale, se usi un dropdown nel form)
+    const { data: vendors, error: vendorError } = await supabase
+      .from("vendors")
+      .select("*");
+
+    res.render("edit_car", {
+      car,
+      user: req.user,
+      vendors: vendors || [],
+      error: null,
+    });
+  } catch (err) {
+    res.status(500).send("Errore nel caricamento del form di modifica");
+  }
 });
 
-app.post(
-  "/cars/edit/:id",
-  checkAuth,
-  upload.array("images", 5),
-  async (req, res) => {
-    const { id } = req.params;
-    const {
-      brand,
-      model,
-      year,
-      license_plate,
-      fuel_type,
-      engine_capacity,
-      horsepower,
-      transmission,
-      status,
-      last_maintenance_date,
-      mileage,
-      contract_start_date,
-      contract_end_date,
-      monthly_cost,
-      annual_cost,
-      insurance_expiry_date,
-      insurance_policy_number,
-      inspection_date,
-      color,
-      assigned_driver,
-      leasing_vendor_id,
-      additional_notes,
-    } = req.body;
 
-    let image_urls = [];
-    if (req.files && req.files.length > 0) {
-      image_urls = req.files.map((file) => "/uploads/" + file.filename);
-    }
-    let imagesJSON = null;
-    if (image_urls.length > 0) {
-      imagesJSON = JSON.stringify(image_urls);
-    }
-
-    const updateData = {
-      brand,
-      model,
-      year: parseInt(year),
-      license_plate,
-      fuel_type,
-      engine_capacity,
-      horsepower,
-      transmission,
-      status,
-      last_maintenance_date,
-      mileage: mileage ? parseInt(mileage) : null,
-      contract_start_date,
-      contract_end_date,
-      monthly_cost: monthly_cost ? parseFloat(monthly_cost) : null,
-      annual_cost: annual_cost ? parseFloat(annual_cost) : null,
-      insurance_expiry_date,
-      insurance_policy_number,
-      inspection_date,
-      color,
-      assigned_driver,
-      leasing_vendor_id: leasing_vendor_id || null,
-      additional_notes,
-    };
-    if (imagesJSON) {
-      updateData.image_url = imagesJSON;
-    }
-
-    const { error: updateError } = await supabase
-      .from("cars")
-      .update(updateData)
-      .eq("id", id);
-    if (updateError)
-      return res.send("Errore durante l'aggiornamento: " + updateError.message);
-    res.redirect("/cars/" + id);
-  }
-);
 
 // Rotta per l'eliminazione di una auto
 app.post("/cars/delete/:id", checkAuth, async (req, res) => {
@@ -425,15 +605,12 @@ app.post("/cars/delete/:id", checkAuth, async (req, res) => {
     if (error) throw error;
     res.redirect("/dashboard");
   } catch (error) {
-    console.error("Errore durante l'eliminazione dell'auto:", error);
     res.status(500).send("Errore del server");
   }
 });
 
 // Rotta per il clone dell'auto
 app.post("/cars/clone/:id", async (req, res) => {
-  console.log(`🔄 Richiesta ricevuta per clonare l'auto con ID: ${req.params.id}`);
-
   try {
     const carId = req.params.id;
     const { data: existingCar, error: fetchError } = await supabase
@@ -443,11 +620,8 @@ app.post("/cars/clone/:id", async (req, res) => {
       .single();
 
     if (fetchError || !existingCar) {
-      console.error("❌ Auto non trovata o errore Supabase:", fetchError);
       return res.status(404).json({ success: false, message: "Auto non trovata" });
     }
-
-    console.log("✅ Auto trovata nel database:", existingCar);
 
     const newLicensePlate = `CLONE-${Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -465,17 +639,33 @@ app.post("/cars/clone/:id", async (req, res) => {
     ]);
 
     if (insertError) {
-      console.error("❌ Errore nell'inserimento:", insertError);
       throw insertError;
     }
-
-    console.log("✅ Auto clonata con successo:", clonedCar);
     res.json({ success: true, clonedCar });
   } catch (error) {
-    console.error("❌ Errore nella clonazione:", error);
     res.status(500).json({ success: false, message: "Errore interno del server" });
   }
 });
+
+// Rotta per salvare i danni su database
+app.post("/cars/save-damage/:id", checkAuth, async (req, res) => {
+  const { id } = req.params;
+  const { damage_markers } = req.body;
+
+  try {
+    const { error } = await supabase
+      .from("cars")
+      .update({ damage_markers })
+      .eq("id", id);
+
+    if (error) throw error;
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 
 // --- ROTTE PRINCIPALI ---
 
@@ -513,12 +703,35 @@ app.get("/logout", (req, res) => {
   res.redirect("/login");
 });
 
-// Dashboard
+//Dashboard
 app.get("/dashboard", checkAuth, async (req, res) => {
-  const { data: cars, error } = await supabase.from("cars").select("*");
-  if (error) return res.send("Errore nel recuperare le auto: " + error.message);
-  res.render("dashboard", { cars, user: req.user });
+  const { data: cars, error: carsError } = await supabase.from("cars").select("*");
+  if (carsError) return res.send("Errore nel recuperare le auto: " + carsError.message);
+
+  // Recupero tutti i vendor
+  const { data: vendors, error: vendorsError } = await supabase.from("vendors").select("*");
+  if (vendorsError) return res.send("Errore nel recuperare i vendor: " + vendorsError.message);
+
+  // Creo una mappa per trovare il vendor corrispondente a ogni car
+  const vendorsMap = {};
+  vendors.forEach(vendor => {
+    vendorsMap[vendor.id] = vendor;
+  });
+
+  // Associo vendor a ciascuna auto
+  const carsWithVendors = cars.map(car => {
+    return {
+      ...car,
+      vendor: vendorsMap[car.leasing_vendor_id] || null
+    };
+  });
+
+  res.render("dashboard", {
+    cars: carsWithVendors,
+    user: req.user
+  });
 });
+
 
 // Console log per verificare che il server sia in funzione sulla porta 3000
 app.listen(port, () => {
