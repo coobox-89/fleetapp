@@ -89,6 +89,115 @@ const checkAuth = async (req, res, next) => {
 
 // --- ROTTE STATICHE (definite PRIMA delle dinamiche) ---
 
+// Rotta per trigger notifiche
+const checkAndNotifyExpiringContracts = async (user_id) => {
+  const { data: cars, error } = await supabase
+    .from('cars')
+    .select('*');
+
+  if (error) {
+    console.error('Errore nel recupero auto:', error.message);
+    return;
+  }
+
+  const now = new Date();
+  const fourteenDaysLater = new Date();
+  fourteenDaysLater.setDate(now.getDate() + 14);
+  const todayISO = new Date().toISOString().split('T')[0]; // Solo la data
+
+  for (const car of cars) {
+    if (!user_id) continue;
+
+    const scadenze = [
+      {
+        tipo: 'scadenza_assicurazione',
+        data: car.insurance_expiry_date,
+        title: 'Assicurazione in scadenza',
+        message: `L'assicurazione per ${car.license_plate} scade il ${car.insurance_expiry_date}`
+      },
+      {
+        tipo: 'scadenza_revisione',
+        data: car.inspection_date,
+        title: 'Revisione in scadenza',
+        message: `La revisione per ${car.license_plate} scade il ${car.inspection_date}`
+      },
+      {
+        tipo: 'scadenza_fine_contratto',
+        data: car.contract_end_date,
+        title: 'Fine contratto veicolo',
+        message: `Il contratto del veicolo ${car.license_plate} termina il ${car.contract_end_date}`
+      }
+    ];
+
+    for (const s of scadenze) {
+      if (!s.data) continue;
+
+      const dueDate = new Date(s.data);
+      const daysLeft = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+
+      if (daysLeft <= 14 && daysLeft >= 0) {
+        // Verifica se già esiste una notifica creata oggi
+        const { data: existing } = await supabase
+          .from('notifications')
+          .select('id')
+          .eq('user_id', user_id)
+          .eq('car_id', car.id)
+          .eq('type', s.tipo)
+          .gte('created_at', todayISO); // Solo oggi
+
+        if (!existing || existing.length === 0) {
+          const { error: insertError } = await supabase.from('notifications').insert([{
+            user_id,
+            car_id: car.id,
+            type: s.tipo,
+            title: s.title,
+            message: s.message,
+            is_read: false
+          }]);
+
+          if (insertError) {
+            console.error(`Errore creazione notifica ${s.tipo} per ${car.license_plate}:`, insertError.message);
+          }
+        }
+      }
+    }
+  }
+};
+
+
+// Rotta per notiiche
+app.get('/notifications', checkAuth, async (req, res) => {
+  const user = req.user.user; // req.user è un oggetto Supabase { user, session }
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('is_read', false)
+    .order('created_at', { ascending: false });
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.json({
+    unread_count: data.length,
+    notifications: data
+  });
+});
+// Rotta per visualizzare tutte le notifiche
+app.get('/notifications/all', checkAuth, async (req, res) => {
+  const user = req.user.user;
+
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) return res.status(500).send('Errore nel caricamento notifiche');
+
+  res.render('notifications_all', { notifications: data });
+});
+
+
 // Funzione riusabile per tracciare lo storico driver
 async function saveDriverHistory(carId, oldDriver, newDriver) {
   if (!oldDriver || !newDriver || oldDriver === newDriver) return;
@@ -554,7 +663,6 @@ app.get("/cars/:id", checkAuth, async (req, res) => {
     }
   }
   
-  
 
   res.render("car_detail", {
     car,
@@ -601,13 +709,26 @@ app.get("/cars/edit/:id", checkAuth, async (req, res) => {
 app.post("/cars/delete/:id", checkAuth, async (req, res) => {
   const { id } = req.params;
   try {
+    // Elimina notifiche associate
+    await supabase.from("notifications").delete().eq("car_id", id);
+
+    // Elimina storico chilometri
+    await supabase.from("car_km_history").delete().eq("car_id", id);
+
+    // Elimina storico driver
+    await supabase.from("car_driver_history").delete().eq("car_id", id);
+
+    // Elimina l'auto
     const { error } = await supabase.from("cars").delete().eq("id", id);
     if (error) throw error;
+
     res.redirect("/dashboard");
   } catch (error) {
-    res.status(500).send("Errore del server");
+    console.error("Errore nella cancellazione:", error.message);
+    res.status(500).send("Errore del server durante la cancellazione dell'auto");
   }
 });
+
 
 // Rotta per il clone dell'auto
 app.post("/cars/clone/:id", async (req, res) => {
@@ -695,6 +816,9 @@ app.post("/login", async (req, res) => {
   });
   if (error) return res.render("login", { error: error.message, user: null });
   req.session.token = data.session.access_token;
+   // 🔔 Controlla scadenze dopo login
+   const { data: user } = await supabase.auth.getUser(data.session.access_token);
+   await checkAndNotifyExpiringContracts(user.user.id);
   res.redirect("/dashboard");
 });
 // Rotta per il logout dell'utente che ha effettuato il log-in
