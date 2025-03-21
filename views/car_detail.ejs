@@ -7,7 +7,6 @@
     <div class="flex space-x-2">
       <!-- I bottoni usano la classe "btn" con dimensioni ridotte (px-2 py-1 text-sm) per avere lo stesso stile del tasto "Modifica" -->
       <button id="printBtn" class="btn px-2 py-1 text-sm" title="Stampa"><i class="fa-solid fa-print fa-lg mr-2"></i>Stampa</button>
-      <button id="pdfBtn" class="btn px-2 py-1 text-sm" title="Genera PDF"><i class="fa-solid fa-file-pdf mr-2"></i>PDF</button>
       <button id="mailBtn" class="btn px-2 py-1 text-sm" title="Invia via Mail"><i class="fa-solid fa-envelope mr-2"></i>Mail</button>
     </div>
   </div>
@@ -64,7 +63,7 @@
       <section class="mb-4">
         <h2 class="text-xl font-bold mb-2">Segnala Danno</h2>
         <!-- Il container usa l'immagine fissa che comprende già tutte le viste -->
-        <div id="damageSchematicContainer" class="relative mx-auto" style="inline-size:300px; block-size:180px; border:2px solid #66cc66;">
+        <div id="damageSchematicContainer" class="relative mx-auto" style="inline-size:300px; block-size:180px; border:2px solid #3CD071;">
           <svg id="damageSchematic" width="300" height="180" viewBox="0 0 300 180">
             <image href="/assets/scheda-danni.png" x="0" y="0" width="300" height="180" preserveAspectRatio="xMidYMid meet" />
           </svg>
@@ -91,7 +90,7 @@
 
     <!-- Popup storico chilometri -->
 <div id="km-history-popup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-  <div class="bg-gray-800 text-white rounded-lg shadow-lg w-full max-w-2xl p-6">
+  <div class="bg-gray-900 text-white rounded-lg shadow-lg w-full max-w-2xl p-6">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-xl font-bold">Storico chilometri</h2>
       <button onclick="closeKmHistoryPopup()" class="text-white text-2xl">&times;</button>
@@ -131,7 +130,7 @@
 
 <!-- Popup Storico Driver -->
 <div id="driver-history-popup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-  <div class="bg-gray-800 text-white rounded-lg shadow-lg w-full max-w-2xl p-6">
+  <div class="bg-gray-900 text-white rounded-lg shadow-lg w-full max-w-2xl p-6">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-xl font-bold">Storico Driver</h2>
       <button onclick="closeDriverHistoryPopup()" class="text-white text-2xl">&times;</button>
@@ -268,19 +267,6 @@
   // Funzione per stampare la pagina
   document.getElementById('printBtn').addEventListener('click', function() {
     window.print();
-  });
-
-  // Funzione per generare PDF (richiede jsPDF)
-  document.getElementById('pdfBtn').addEventListener('click', function() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.html(document.querySelector('body'), {
-      callback: function(doc) {
-        doc.save('scheda_auto.pdf');
-      },
-      x: 10,
-      y: 10
-    });
   });
 
   // Funzione per inviare via mail

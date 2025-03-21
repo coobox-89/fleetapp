@@ -1,63 +1,112 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title || "FleetApp" %></title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    body {
+      background-color: #2C3E50;
+      color: #ecf0f1;
+      font-family: 'Montserrat', sans-serif;
+    }
+    a { color: #3CD071; }
+    .btn {
+      background-color: #3CD071;
+      color: #ffffff;
+      font-weight: bold;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 9999px;
+      transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+    }
+    .btn:hover {
+      background-color: #39C574;
+      transform: scale(1.05);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .btn-grey {
+      background-color: #2C3E50;
+      color: #ffffff;
+      font-weight: bold;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 9999px;
+      transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+    }
+    .btn-grey:hover {
+      background-color: #273747;
+      transform: scale(1.05);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .header {
+      background-color: #34495e;
+    }
+    .notification-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .notification-dropdown {
+      display: none;
+      position: absolute;
+      top: 2.5rem;
+      right: 0;
+      width: 24rem;
+      background-color: #1f2937;
+      color: white;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      z-index: 50;
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .notification-wrapper:hover .notification-dropdown,
+    .notification-wrapper:focus-within .notification-dropdown,
+    .notification-wrapper:focus .notification-dropdown {
+      display: block;
+    }
+    .notification-item {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #374151;
+    }
+    .notification-item:last-child {
+      border-bottom: none;
+    }
+    .notification-dropdown::-webkit-scrollbar,
+    #all-notifications-content::-webkit-scrollbar {
+      width: 8px;
+    }
+    .notification-dropdown::-webkit-scrollbar-track,
+    #all-notifications-content::-webkit-scrollbar-track {
+      background: #1f2937;
+    }
+    .notification-dropdown::-webkit-scrollbar-thumb,
+    #all-notifications-content::-webkit-scrollbar-thumb {
+      background-color: #555;
+      border-radius: 4px;
+    }
+    .notification-box {
+      display: flex;
+      align-items: flex-start;
+      background-color: #1e293b;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+      gap: 0.75rem;
+    }
+    .notification-icon {
+      flex-shrink: 0;
+      font-size: 1.25rem;
+      color: #66cc66;
+      margin-top: 2px;
+    }
 
-
-                                                  <!DOCTYPE html>
-                                                  <html lang="it">
-                                                  <head>
-                                                    <meta charset="UTF-8">
-                                                    <meta name="viewport" content="width=device-width, initial-scale=1">
-                                                    <title><%= title || "FleetApp" %></title>
-                                                    <!-- Google Fonts: Montserrat -->
-                                                    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
-                                                    <!-- Tailwind CSS CDN -->
-                                                    <script src="https://cdn.tailwindcss.com"></script>
-                                                    <!-- Font Awesome CDN / integrity="sha512-Fo3rlrZj/kTcG6v9H+Z8W0gJ/5kkxBzo7Kn5Br4Z+2ZOehhjY3iBj5Gsj9G0z5V5Z5sl4u5Rz/9/x6y3eABzVw==" 
-                                                      crossorigin="anonymous" referrerpolicy="no-referrer" />-->
-                                                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"  
-                                                      crossorigin="anonymous" referrerpolicy="no-referrer" />
-                                                    <style>
-                                                      /* Global Styles */
-                                                      body {
-                                                        background-color: #2C3E50; /* Sfondo dark pastel */
-                                                        color: #ecf0f1;
-                                                        font-family: 'Montserrat', sans-serif;
-                                                      }
-                                                      a { color: #66cc66; }
-                                                      /* Button styles (verde fluo per i bottoni principali) */
-                                                      .btn {
-                                                        background-color: #66cc66;  /* Verde fluo più tenue */
-                                                        color: #ffffff;
-                                                        font-weight: bold;
-                                                        padding: 0.5rem 1rem;
-                                                        border: none;
-                                                        border-radius: 9999px;
-                                                        transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
-                                                      }
-                                                      .btn:hover {
-                                                        background-color: #55b155;
-                                                        transform: scale(1.05);
-                                                        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-                                                      }
-                                                      /* Nuova classe per bottoni grey */
-                                                      .btn-grey {
-                                                        background-color: #2C3E50; /* Stesso colore dello sfondo */
-                                                        color: #ffffff;
-                                                        font-weight: bold;
-                                                        padding: 0.5rem 1rem;
-                                                        border: none;
-                                                        border-radius: 9999px;
-                                                        transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
-                                                      }
-                                                      .btn-grey:hover {
-                                                        background-color: #273747;
-                                                        transform: scale(1.05);
-                                                        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-                                                      }
-                                                      /* Header specific */
-                                                      .header {
-                                                        background-color: #34495e;
-                                                      }
-
-                                                      .italian-plate {
+    .italian-plate {
   inline-size: 260px;
   block-size: 60px;
   background: linear-gradient(to bottom, #aaa, #f0f0f0);
@@ -128,29 +177,131 @@
   border-radius: 50%;
   background: transparent;
 }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#2C3E50] text-white">
+  <nav class="header p-4 flex justify-between items-center border-b border-gray-700">
+    <div class="flex items-center space-x-2">
+      <i class="fas fa-car-side text-2xl" style="color: #3CD071;"></i>
+      <a href="/" class="text-2xl font-bold" style="color: #3CD071;">FleetApp</a>
+    </div>
+    <div class="flex items-center space-x-4">
+      <% if (typeof user !== 'undefined' && user) { %>
+        <a href="/insight" class="hover:underline">Insight</a>
+        <a href="/dashboard" class="hover:underline">Il mio parco</a>
+        <a href="/logout" class="hover:underline">Logout</a>
+        <div class="notification-wrapper ml-4">
+          <button class="relative focus:outline-none">
+            <i id="bell-icon" class="fa fa-bell text-white text-xl cursor-pointer"></i>
+            <span id="notification-badge" class="hidden absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"></span>
+          </button>
+          <div id="notification-dropdown" class="notification-dropdown">
+            <h3 class="text-md font-semibold mb-2">Notifiche recenti</h3>
+            <ul id="notification-list" class="text-sm space-y-2"></ul>
+            <button onclick="openNotificationPopup()" class="mt-4 w-full text-center text-green-400 hover:underline text-sm">Visualizza tutte</button>
+          </div>
+        </div>
+        <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 items-center justify-center hidden">
+          <div class="bg-gray-900 rounded-lg shadow-lg w-full max-w-2xl mx-auto p-6 overflow-hidden">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-bold">Tutte le notifiche</h2>
+              <button onclick="closeNotificationPopup()" class="text-white text-2xl">&times;</button>
+            </div>
+            <div id="all-notifications-content" class="flex flex-col gap-4 max-h-[400px] overflow-y-auto pr-2">
+              <!-- JS caricherà qui le notifiche paginabili -->
+            </div>
+            <div class="flex justify-between mt-4">
+              <button onclick="loadNotificationsPage(-1)" class="btn-grey">&lt;</button>
+              <button onclick="loadNotificationsPage(1)" class="btn-grey">&gt;</button>
+            </div>
+          </div>
+        </div>
+        <script>
+          let currentNotificationPage = 0;
 
+          async function fetchNotifications() {
+            try {
+              const response = await fetch('/notifications');
+              const data = await response.json();
+              const badge = document.getElementById('notification-badge');
+              const list = document.getElementById('notification-list');
+              const bell = document.getElementById('bell-icon');
 
+              if (data.unread_count > 0) {
+                badge.innerText = data.unread_count;
+                badge.classList.remove('hidden');
+                bell.classList.remove('text-white');
+                bell.classList.add('text-green-400');
+              } else {
+                badge.classList.add('hidden');
+                bell.classList.remove('text-green-400');
+                bell.classList.add('text-white');
+              }
 
+              list.innerHTML = '';
+              data.notifications.slice(0, 5).forEach(n => {
+                const li = document.createElement('li');
+                li.className = 'notification-item';
+                li.innerHTML = `
+                  <div class="flex gap-2 items-start">
+                    <i class="fas fa-circle-info text-green-400 mt-1"></i>
+                    <div>
+                      <strong class="text-sm">${n.title}</strong>
+                      <p class="text-xs text-gray-300">${n.message}</p>
+                      <p class="text-[10px] text-gray-400 mt-1">${new Date(n.created_at).toLocaleString()}</p>
+                    </div>
+                  </div>`;
+                list.appendChild(li);
+              });
 
-                                                    </style>
-                                                  </head>
-                                                  <body class="min-h-screen flex flex-col">
-                                                    <nav class="header p-4 flex justify-between items-center border-b border-gray-700">
-                                                      <div class="flex items-center space-x-2">
-                                                        <i class="fas fa-car-side text-2xl" style="color: #66cc66;"></i>
-                                                        <a href="/" class="text-2xl font-bold" style="color: #66cc66;">FleetApp</a>
-                                                      </div>
-                                                      <div>
-                                                        <% if (typeof user !== 'undefined' && user) { %>
-                                                          <a href="/insight" class="mr-4 hover:underline">Insight</a>
-                                                          <a href="/dashboard" class="mr-4 hover:underline">Il mio parco</a>
-                                                          <a href="/logout" class="mr-4 hover:underline">Logout</a>
-<i class="fas fa-bell text-xl text-white hover:text-green-400 cursor-pointer"></i>
+              window.allNotifications = data.notifications;
+              renderNotificationsPage();
+            } catch (error) {
+              console.error('Errore nel recuperare le notifiche:', error);
+            }
+          }
 
-                                                        <% } else { %>
-                                                          <a href="/login" class="mr-4 hover:underline">Login</a>
-                                                          <a href="/signup" class="mr-4 hover:underline">Registrati</a>
-                                                        <% } %>
-                                                      </div>
-                                                    </nav>
-                                                    <main class="flex-grow container mx-auto p-4">
+          function openNotificationPopup() {
+            document.getElementById('notification-modal').classList.remove('hidden');
+          }
+
+          
+          function closeNotificationPopup() {
+            document.getElementById('notification-modal').classList.add('hidden');
+          }
+
+          function loadNotificationsPage(offset) {
+            currentNotificationPage += offset;
+            renderNotificationsPage();
+          }
+
+          function renderNotificationsPage() {
+            const content = document.getElementById('all-notifications-content');
+            content.innerHTML = '';
+            const start = currentNotificationPage * 20;
+            const end = start + 20;
+            const notifications = (window.allNotifications || []).slice(start, end);
+            notifications.forEach(n => {
+              const box = document.createElement('div');
+              box.className = 'notification-box';
+              box.innerHTML = `
+                <i class="fas fa-circle-info notification-icon"></i>
+                <div>
+                  <h3 class='font-semibold text-sm mb-1'>${n.title}</h3>
+                  <p class='text-xs text-gray-300'>${n.message}</p>
+                  <p class='text-[10px] text-gray-400 mt-1'>${new Date(n.created_at).toLocaleString()}</p>
+                </div>`;
+              content.appendChild(box);
+            });
+          }
+
+          document.addEventListener('DOMContentLoaded', fetchNotifications);
+        </script>
+      <% } else { %>
+        <a href="/login" class="hover:underline">Login</a>
+        <a href="/signup" class="hover:underline">Registrati</a>
+      <% } %>
+    </div>
+  </nav>
+</body>
+</html>

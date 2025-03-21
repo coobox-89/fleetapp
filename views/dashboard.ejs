@@ -1,6 +1,6 @@
 <%- include('partials/header', { title: "Il mio parco", user: user }) %>
 
-<div class="max-w-7xl mx-auto p-4">
+<div class="w-full mx-auto px-32 py-4">
   <div class="flex justify-between items-center mb-6">
     <h1 class="text-3xl font-bold">Il mio parco</h1>
     <div class="relative w-full max-w-xs">
@@ -47,19 +47,20 @@
           <% } %>
         </div>
         <!-- Logo vendor (se presente) -->
-        <div class="mb-4">
-          <% if (car.vendor && car.vendor.image_url) { 
-            let cleanedImageUrl;
-            try {
-              const parsed = JSON.parse(car.vendor.image_url);
-              cleanedImageUrl = Array.isArray(parsed) ? parsed[0] : parsed;
-            } catch (e) {
-              cleanedImageUrl = car.vendor.image_url;
-            }
-          %>
-            <img src="<%= cleanedImageUrl %>" alt="Logo Vendor" class="w-40 h-auto mx-auto mb-2">
-          <% } %>
-        </div>
+<div class="mb-4">
+  <% if (car.vendor && car.vendor.image_url) { 
+    let cleanedImageUrl;
+    try {
+      const parsed = JSON.parse(car.vendor.image_url);
+      cleanedImageUrl = Array.isArray(parsed) ? parsed[0] : parsed;
+    } catch (e) {
+      cleanedImageUrl = car.vendor.image_url;
+    }
+  %>
+    <img src="<%= cleanedImageUrl %>" alt="Logo Vendor" class="w-40 h-auto mx-auto mb-2">
+  <% } %>
+</div>
+
         
         <div class="flex items-center space-x-2">
           <h2 class="text-xl font-bold"><%= car.brand %> <%= car.model %></h2>
@@ -87,7 +88,7 @@
         <p><strong>Driver:</strong> <%= car.assigned_driver %></p>
         <p><strong>Stato:</strong>
           <% if (car.status && car.status.toLowerCase() === "assegnata") { %>
-            <span class="btn" style="pointer-events: none; background-color: #66cc66; color: #ffffff; font-weight: bold; padding: 0.25rem 0.75rem; border-radius: 9999px;">
+            <span class="btn" style="pointer-events: none; background-color: #3CD071; color: #ffffff; font-weight: bold; padding: 0.25rem 0.75rem; border-radius: 9999px;">
               <%= car.status %>
             </span>
           <% } else if (car.status && car.status.toLowerCase() === "manutenzione") { %>
@@ -151,7 +152,7 @@
     </div>
 
     <div class="flex justify-between mt-4 space-x-2">
-      <button type="submit" style="flex: 1; background-color: #66cc66; color: white; font-weight: bold; padding: 10px; border: none; border-radius: 6px;">Salva</button>
+      <button type="submit" style="flex: 1; background-color: #3CD071; color: white; font-weight: bold; padding: 10px; border: none; border-radius: 6px;">Salva</button>
       <button type="button" onclick="document.getElementById('driver-popup').style.display = 'none'" style="flex: 1; background-color: #ef4444; color: white; font-weight: bold; padding: 10px; border: none; border-radius: 6px;">Chiudi</button>
     </div>
   </form>
@@ -168,7 +169,7 @@
         style="inline-size: 100%; padding: 10px; border-radius: 6px; border: 1px solid #4b5563; background-color: #374151; color: white;" />
     </div>
     <div class="flex justify-between mt-4 space-x-2">
-      <button type="submit" style="flex: 1; background-color: #66cc66; color: white; font-weight: bold; padding: 10px; border: none; border-radius: 6px;">Salva</button>
+      <button type="submit" style="flex: 1; background-color: #3CD071; color: white; font-weight: bold; padding: 10px; border: none; border-radius: 6px;">Salva</button>
       <button type="button" onclick="document.getElementById('km-popup').style.display = 'none'" style="flex: 1; background-color: #ef4444; color: white; font-weight: bold; padding: 10px; border: none; border-radius: 6px;">Chiudi</button>
     </div>
   </form>
