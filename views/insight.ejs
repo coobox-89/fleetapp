@@ -4,7 +4,7 @@
   <h1 class="text-3xl font-bold mb-6 text-center text-white">Insight Dashboard</h1>
 
   <!-- Summary Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
     <div class="bg-gray-800 p-4 rounded shadow text-center">
       <i class="fas fa-car-side text-3xl text-green-400"></i>
       <p class="font-bold text-xl mt-2 text-white"><%= totalCars %></p>
@@ -25,6 +25,7 @@
       <p class="font-bold text-xl mt-2 text-white"><%= maintenanceCars %></p>
       <p class="text-sm text-gray-300">In Manutenzione</p>
     </div>
+    
     <div class="bg-gray-800 p-4 rounded shadow text-center">
       <i class="fas fa-chart-line text-3xl text-green-400"></i>
       <p class="font-bold text-xl mt-2 text-white">€<%= totalMonthlyCost %></p>
@@ -41,8 +42,32 @@
     </div>
   </div>
 
+   <!-- GREEN AREA -->
+   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+    <div class="relative bg-green-950 bg-opacity-90 rounded-2xl p-6 shadow text-white overflow-hidden">
+      <div class="absolute right-6 top-1 text-green-900 text-[90px] opacity-10 pointer-events-none">
+        <i class="fas fa-leaf"></i>
+      </div>
+      <h2 class="text-xl font-bold mb-3">Motorizzazioni Green</h2>
+      <p class="text-lg"><i class="fas fa-bolt mr-2"></i>Auto elettriche: <strong><%= electricCount %></strong></p>
+      <p class="text-lg"><i class="fas fa-recycle mr-2"></i>Auto ibride: <strong><%= hybridCount %></strong></p>
+    </div>
+    <div class="relative bg-emerald-900 bg-opacity-90 rounded-2xl p-6 shadow text-white overflow-hidden">
+      <div class="absolute right-2 top-1 opacity-10 pointer-events-none">
+        <img src="/uploads/co2.png" alt="CO2" class="w-40 h-40 object-contain">
+      </div>
+      <h2 class="text-xl font-bold mb-3">Impatto Ambientale</h2>
+      <p class="text-lg"><i class="fa-solid fa-earth-europe mr-2"></i>Riduzione stimata CO₂: <strong><%= estimatedCO2Saving %> t/anno</strong></p>
+      <p class="text-sm text-emerald-200 mt-1">Basata su 2.1 t CO₂/anno per veicolo green</p>
+      <p class="text-xs text-emerald-300 mt-1">
+        Fonte: <a href="https://www.eea.europa.eu/en/analysis/indicators/co2-performance-emissions-of-new/average-co2-emissions-from-n" target="_blank" class="underline hover:text-white">European Environment Agency</a>
+      </p>
+      
+    </div>
+  </div>
+
   <!-- Grafico + Classifica -->
-  <div class="flex flex-col md:flex-row gap-6 mb-8">
+  <div class="flex flex-col md:flex-row gap-6 mb-4">
     <div class="bg-gray-800 p-6 rounded shadow flex-1 flex flex-col items-center">
       <h2 class="text-2xl font-bold mb-4 text-white text-center">Distribuzione per Stato</h2>
       <div class="flex flex-col items-center">
@@ -86,7 +111,7 @@
   </div>
 
   <!-- Vendor + Task -->
-  <div class="flex flex-col md:flex-row gap-6 mb-8">
+  <div class="flex flex-col md:flex-row gap-6 mb-4">
     <div class="bg-gray-800 p-6 rounded shadow flex-1">
       <h2 class="text-2xl font-bold mb-4 text-white text-center">Top 5 Vendor</h2>
       <% topVendors.forEach(vendor => { 
@@ -138,7 +163,7 @@
   </div>
 
   <!-- Scadenze -->
-  <div class="bg-gray-800 p-6 rounded shadow mb-8">
+  <div class="bg-gray-800 p-6 rounded shadow mb-4">
     <h2 class="text-xl font-bold mb-4 text-white"><i class="fas fa-calendar-alt mr-2"></i>Scadenze entro 30 giorni</h2>
     <% if (upcomingDeadlines.length === 0) { %>
       <p class="text-sm text-gray-400">Nessuna scadenza imminente.</p>

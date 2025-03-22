@@ -177,6 +177,27 @@
   border-radius: 50%;
   background: transparent;
 }
+
+/* Badge per auto elettriche ed ibride */
+.badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  margin-left: 0.5rem;
+}
+
+.badge-hybrid {
+  background-color: #34D399; /* verde menta */
+  color: #1F2937;
+}
+
+.badge-electric {
+  background-color: #60A5FA; /* blu chiaro */
+  color: #1F2937;
+}
+
   </style>
 </head>
 <body class="min-h-screen flex flex-col bg-[#2C3E50] text-white">
@@ -210,10 +231,20 @@
             <div id="all-notifications-content" class="flex flex-col gap-4 max-h-[400px] overflow-y-auto pr-2">
               <!-- JS caricherà qui le notifiche paginabili -->
             </div>
+            <button onclick="markAllNotificationsAsRead()" class="text-sm text-green-400 border border-green-500 rounded-full px-4 py-1 hover:bg-green-500 hover:text-white transition mb-4 mt-6 self-end">
+              ✓ Segna tutte come lette
+            </button>
+                       
             <div class="flex justify-between mt-4">
-              <button onclick="loadNotificationsPage(-1)" class="btn-grey">&lt;</button>
-              <button onclick="loadNotificationsPage(1)" class="btn-grey">&gt;</button>
+              <button onclick="loadNotificationsPage(-1)" class="text-sm text-green-400 border border-green-500 rounded-full px-4 py-1 hover:bg-green-500 hover:text-white transition">
+                &lt;
+              </button>
+              <button onclick="loadNotificationsPage(1)" class="text-sm text-green-400 border border-green-500 rounded-full px-4 py-1 hover:bg-green-500 hover:text-white transition">
+                &gt;
+              </button>
             </div>
+            
+            
           </div>
         </div>
         <script>
@@ -243,14 +274,18 @@
                 const li = document.createElement('li');
                 li.className = 'notification-item';
                 li.innerHTML = `
-                  <div class="flex gap-2 items-start">
-                    <i class="fas fa-circle-info text-green-400 mt-1"></i>
-                    <div>
-                      <strong class="text-sm">${n.title}</strong>
-                      <p class="text-xs text-gray-300">${n.message}</p>
-                      <p class="text-[10px] text-gray-400 mt-1">${new Date(n.created_at).toLocaleString()}</p>
-                    </div>
-                  </div>`;
+  <div class="flex gap-2 items-start">
+    <i class="fas fa-circle-info text-green-400 mt-1"></i>
+    <div>
+      <strong class="text-sm">${n.title}</strong>
+      <p class="text-xs text-gray-300">${n.message}</p>
+      <p class="text-[10px] text-gray-400 mt-1">${new Date(n.created_at).toLocaleString()}</p>
+      <button onclick="markNotificationAsRead('${n.id}')" class="text-[10px] text-green-400 hover:underline mt-1">
+        Segna come letta
+      </button>
+    </div>
+  </div>`;
+
                 list.appendChild(li);
               });
 
@@ -294,6 +329,32 @@
               content.appendChild(box);
             });
           }
+
+  
+  async function markNotificationAsRead(id) {
+    try {
+      await fetch(`/notifications/read/${id}`, {
+        method: 'POST'
+      });
+      fetchNotifications(); // Ricarica notifiche
+    } catch (err) {
+      console.error('Errore nel segnare la notifica come letta:', err);
+    }
+  }
+
+  async function markAllNotificationsAsRead() {
+    try {
+      await fetch('/notifications/read-all', {
+        method: 'POST'
+      });
+      fetchNotifications(); // Ricarica notifiche
+      closeNotificationPopup(); // Chiudi il popup dopo
+    } catch (err) {
+      console.error('Errore nel segnare tutte come lette:', err);
+    }
+  }
+
+
 
           document.addEventListener('DOMContentLoaded', fetchNotifications);
         </script>
