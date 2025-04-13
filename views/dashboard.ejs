@@ -64,11 +64,12 @@
         
 <div class="flex items-center space-x-2">
   <h2 class="text-xl font-bold flex items-center">
-    <%= car.brand %> <%= car.model %>
+    <%= car.brand %> 
     
-    <% if (car.fuel_type && car.fuel_type.toLowerCase() === 'null') { %>
-  <span class="badge badge-hybrid">♻️ Hybrid</span>
-<% } else if (car.fuel_type && car.fuel_type.toLowerCase() === 'elettrico') { %>
+    <% if (car.fuel_type && car.fuel_type.toLowerCase() === 'elettrico') { %>
+      <div class="w-8 h-8 rounded-full border border-green-400 flex items-center justify-center ml-2" title="Alimentazione elettrica">
+        <i class="fa-solid fa-bolt text-green-400 text-lg"></i>
+<% } else if (car.fuel_type && car.fuel_type.toLowerCase() === 'ibrido') { %>
   <div class="w-8 h-8 rounded-full border border-green-400 flex items-center justify-center ml-2" title="Alimentazione elettrica">
   <i class="fa-solid fa-leaf text-green-400 text-lg"></i>
 </div>
@@ -79,23 +80,43 @@
           
 
           <!-- Clone -->
-          <button class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-200 clone-car" data-car-id="<%= car.id %>">
+          <button class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-200 clone-car" 
+          title="Clona Auto"
+          data-car-id="<%= car.id %>">
             <i class="fa-solid fa-clone text-gray-600"></i>
           </button>
 
           <!-- Cambio Driver -->
-          <button class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-200 change-driver" data-car-id="<%= car.id %>" data-current-driver="<%= car.assigned_driver %>" data-current-status="<%= car.status %>">
+          <button class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-200 change-driver" 
+          title="Cambio Driver"
+          data-car-id="<%= car.id %>" data-current-driver="<%= car.assigned_driver %>" data-current-status="<%= car.status %>">
             <i class="fa-solid fa-user-edit text-gray-600"></i>
           </button>
 
           <!-- Modifica km -->
           <button class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-200 edit-km"
+          title="Modifica Km"
                   data-car-id="<%= car.id %>"
                   data-current-km="<%= car.mileage %>">
             <i class="fa-solid fa-road text-gray-600"></i>
           </button>
-        </div>
 
+          <!-- Bottone rapido: Carica verbale -->
+<% const hasUnpaidFine = Array.isArray(unpaidFines) && unpaidFines.includes(car.id); %>
+<button class="w-8 h-8 rounded-full border flex items-center justify-center transition
+  <%= hasUnpaidFine ? 'bg-red-600 border-red-600' : 'border-gray-300 hover:bg-gray-200' %>" 
+  title="Carica verbale"
+  onclick="openFinePopup('<%= car.id %>', '<%= car.plate %>')">
+
+  <img src="/uploads/police.png" 
+       alt="Verbale" 
+       class="w-8 h-8 
+         <%= hasUnpaidFine ? 'filter brightness-0 invert' : '' %>">
+</button>
+
+        </div>
+        <h2 class="text-xl font-bold flex items-center">
+        <p><%= car.model %></p></h2>
         <p><strong>Targa:</strong> <%= car.license_plate %></p>
         <p><strong>Driver:</strong> <%= car.assigned_driver %></p>
         <p><strong>Stato:</strong>
@@ -127,6 +148,7 @@
     <% }) %>
   </div>
 </div>
+
 
 <!-- Popup Cambio Driver -->
 <div id="driver-popup" style="
@@ -187,6 +209,43 @@
   </form>
 </div>
 
+<!-- Popup Carica Verbale -->
+<div id="fine-popup" style="display: none; position: fixed; inset-block-start: 50%; inset-inline-start: 50%; transform: translate(-50%, -50%); background: #111826; padding: 24px; border-radius: 12px; z-index: 1000; color: white; inline-size: 320px;">
+  <h2 id="fine-popup-title" style="font-weight: bold; font-size: 20px; margin-bottom: 16px;">Carica verbale</h2>
+  <form id="upload-fine-form" action="/upload-fine" method="POST" enctype="multipart/form-data" class="flex flex-col items-start gap-4">
+    <input type="hidden" id="fine-car-id" name="car_id_override" />
+
+    <div class="flex flex-col md:flex-row items-start md:items-center gap-2 w-full">
+      <label class="text-xs text-gray-300 bg-gray-800 border border-gray-600 px-3 py-1 rounded cursor-pointer hover:bg-gray-700">
+        Sfoglia verbale
+        <input type="file" name="pdf" accept="application/pdf" class="hidden" required>
+      </label>
+      <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs">
+        Carica verbale
+      </button>
+    </div>
+
+    <div class="flex justify-between mt-4 space-x-2 w-full">
+      <button type="button" onclick="document.getElementById('fine-popup').style.display = 'none'" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded text-sm">
+        Chiudi
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Mostra nome del file selezionato
+  document.addEventListener('DOMContentLoaded', function () {
+    const fileInput = document.getElementById('pdf');
+    const fileNameDisplay = document.getElementById('file-name');
+
+    fileInput.addEventListener('change', function () {
+      fileNameDisplay.textContent = this.files[0] ? this.files[0].name : '';
+    });
+  });
+</script>
+
+
 <!-- Popup per messaggi -->
 <div id="popup" style="display:none; position:fixed; inset-block-start:50%; inset-inline-start:50%; transform:translate(-50%, -50%); background:#111826; padding:20px; border-radius:10px; z-index:1000; text-align:center;">
   <h2 id="popup-title" style="color:white; font-weight:bold;">Messaggio</h2>
@@ -200,6 +259,13 @@
     document.getElementById('popup-message').innerText = message;
     document.getElementById('popup').style.display = 'block';
   }
+
+  // Verbali
+    function openFinePopup(carId, plate) {
+  document.getElementById('fine-car-id').value = carId;
+  document.getElementById('fine-popup-title').innerText = `Carica il verbale`;
+  document.getElementById('fine-popup').style.display = 'block';
+}
 
   document.addEventListener('DOMContentLoaded', () => {
     // Modifica km
@@ -296,6 +362,8 @@
 
       document.getElementById('driver-popup').style.display = 'none';
     });
+
+
 
     // Ricerca
     document.getElementById('search-input').addEventListener('input', function () {

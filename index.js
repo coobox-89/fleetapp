@@ -7,6 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import fs from "fs";
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
 import moment from 'moment'; 
 import { parse } from "csv-parse";
 dotenv.config();
@@ -40,13 +41,13 @@ app.set("views", path.join(__dirname, "views"));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 
-
 // Configurazione di multer per il caricamento dei file
 const allowedMimeTypes = [
   "text/csv",
   "application/vnd.ms-excel",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/vnd.ms-excel.sheet.macroenabled.12",
+  "application/pdf"
 ];
 
 const storage = multer.diskStorage({
@@ -71,12 +72,33 @@ const upload = multer({
           false
         );
       }
+    } else if (file.fieldname === "pdf" || file.fieldname === "receipt")  {
+      if (file.mimetype === "application/pdf") {
+        cb(null, true);
+      } else {
+        cb(new Error("Solo file PDF accettati per i verbali"), false);
+      }
     } else {
-      // Per altri campi (es. immagini) si accetta qualsiasi tipologia di file
       cb(null, true);
     }
   },
 });
+
+// Funzione per estrarre testo da un PDF
+async function extractTextFromPDF(buffer) {
+  const loadingTask = pdfjsLib.getDocument({ data: buffer });
+  const pdf = await loadingTask.promise;
+  let fullText = '';
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const strings = content.items.map(item => item.str);
+    fullText += strings.join(' ') + '\n';
+  }
+
+  return fullText;
+}
 
 // Middleware per la protezione delle rotte
 const checkAuth = async (req, res, next) => {
@@ -88,6 +110,138 @@ const checkAuth = async (req, res, next) => {
 };
 
 // --- ROTTE STATICHE (definite PRIMA delle dinamiche) ---
+
+// Correzione Rotta per upload verbale PDF
+app.post('/upload-fine', upload.single('pdf'), checkAuth, async (req, res) => {
+  try {
+    const file = req.file;
+    const plateOverrideCarId = req.body.car_id_override;
+
+    if (!file || !file.mimetype.includes('pdf')) {
+      return res.status(400).send('File non valido');
+    }
+
+    let carId = null;
+    let plate = null;
+
+    if (plateOverrideCarId) {
+      const { data: carData, error: carErr } = await supabase
+        .from('cars')
+        .select('id, license_plate')
+        .eq('id', plateOverrideCarId)
+        .single();
+
+      if (carErr || !carData) return res.status(404).send('Auto non trovata');
+
+      carId = carData.id;
+      plate = carData.license_plate;
+    } else {
+      const buffer = fs.readFileSync(file.path);
+      const text = await extractTextFromPDF(buffer);
+
+      const regex = /[A-Z]{2}\d{3}[A-Z]{2}/g;
+      const matches = text.match(regex);
+
+      console.log("Testo estratto dal PDF:", text);
+      console.log("Targhe trovate:", matches);
+
+      if (!matches || matches.length === 0) {
+        return res.status(400).send('Targa non trovata nel PDF');
+      }
+
+      plate = matches[0];
+
+      const { data: cars, error: carError } = await supabase
+        .from('cars')
+        .select('id')
+        .ilike('license_plate', `%${plate}%`);
+
+      if (carError || !cars || cars.length === 0) {
+        return res.status(404).send(`Auto non trovata per la targa: ${plate}`);
+      }
+
+      carId = cars[0].id;
+    }
+
+    const fileName = `verbale_${plate}_${Date.now()}.pdf`;
+    const filePath = `uploads/verbali/${fileName}`;
+    const targetPath = path.join(__dirname, 'public', filePath);
+    fs.renameSync(file.path, targetPath);
+
+    const { error: insertError } = await supabase
+      .from('fines')
+      .insert([{
+        car_id: carId,
+        plate,
+        file_url: `/${filePath}`,
+        uploaded_at: new Date(),
+        is_paid: false
+      }]);
+
+    if (insertError) {
+      return res.status(500).send('Errore inserimento DB');
+    }
+
+    res.redirect('/dashboard');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Errore durante l\'elaborazione del file');
+  }
+});
+
+// Rotta per visualizzare i verbali associati ad una singola auto
+app.get('/cars/:id/fines', checkAuth, async (req, res) => {
+  const { id } = req.params;
+
+  const { data: fines, error } = await supabase
+    .from('fines')
+    .select('*')
+    .eq('car_id', id)
+    .order('uploaded_at', { ascending: false });
+
+  if (error) {
+    return res.status(500).send('Errore nel recupero dei verbali');
+  }
+
+  res.json({ fines });
+});
+
+// Rotta per marcare un verbale come pagato e caricare la ricevuta
+app.post('/mark-fine-paid/:fine_id', upload.single('receipt'), checkAuth, async (req, res) => {
+  try {
+    const { fine_id } = req.params;
+    const file = req.file;
+
+    if (!file || !file.mimetype.includes('pdf')) {
+      return res.status(400).send('File non valido');
+    }
+
+    const fileName = `ricevuta_${fine_id}_${Date.now()}.pdf`;
+    const filePath = `uploads/ricevute/${fileName}`;
+    const targetPath = path.join(__dirname, 'public', filePath);
+    fs.renameSync(file.path, targetPath);
+
+    const { error } = await supabase
+      .from('fines')
+      .update({
+        is_paid: true,
+        paid_at: new Date(),
+        payment_file_url: `/${filePath}`
+      })
+      .eq('id', fine_id);
+
+    if (error) {
+      return res.status(500).send('Errore durante aggiornamento verbale');
+    }
+
+    res.redirect('/dashboard');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Errore nel caricamento della ricevuta');
+  }
+});
+
+
 
 // Rotta per trigger notifiche
 const checkAndNotifyExpiringContracts = async (user_id) => {
@@ -182,6 +336,40 @@ app.get('/notifications', checkAuth, async (req, res) => {
     notifications: data
   });
 });
+
+// Rotta per marcare una notifica come letta
+app.post('/notifications/read/:id', checkAuth, async (req, res) => {
+  const notificationId = req.params.id;
+
+  const { error } = await supabase
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('id', notificationId);
+
+  if (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+
+  res.json({ success: true });
+});
+
+// Rotta per marcare tutte le notifiche come lette
+app.post('/notifications/read-all', checkAuth, async (req, res) => {
+  const user = req.user.user;
+
+  const { error } = await supabase
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('user_id', user.id)
+    .eq('is_read', false);
+
+  if (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+
+  res.json({ success: true });
+});
+
 // Rotta per visualizzare tutte le notifiche
 app.get('/notifications/all', checkAuth, async (req, res) => {
   const user = req.user.user;
@@ -374,6 +562,7 @@ app.get("/insight", checkAuth, async (req, res) => {
       .select("*", { count: "exact", head: true })
       .ilike("status", "%manutenzione%");
 
+
     // Costi
     const { data: monthlyCostData } = await supabase.rpc("sum_monthly_cost");
     const totalMonthlyCost = monthlyCostData?.[0]?.sum || 0;
@@ -406,6 +595,25 @@ for (const item of classificationRaw) {
     image_url: matchingCars?.[0]?.image_url || null
   });
 }
+
+// Conteggio veicoli elettrici e ibridi
+const { data: fuelTypesCount } = await supabase
+  .from("cars")
+  .select("fuel_type", { count: "exact" });
+
+let electricCount = 0;
+let hybridCount = 0;
+let totalFleet = fuelTypesCount.length;
+
+fuelTypesCount.forEach(car => {
+  const fuel = (car.fuel_type || "").toLowerCase();
+  if (fuel === 'elettrico') electricCount++;
+  else if (fuel === 'ibrido') hybridCount++;
+});
+
+// Stima impatto ambientale: ipotizziamo che ogni auto elettrica/ibrida eviti 2.1 tonnellate CO₂/anno
+const estimatedCO2Saving = ((electricCount + hybridCount) * 2.1).toFixed(1);
+
     // Top vendors
 const { data: topVendorData, error: topVendorsError } = await supabase
 .from("cars")
@@ -476,6 +684,22 @@ const topVendors = Object.values(vendorCountMap).sort((a, b) => b.count - a.coun
       }
     });
 
+  //Counter verbali non pagati  
+  const { data: unpaidFinesRaw, error: unpaidFinesError } = await supabase
+  .from("fines")
+  .select("car_id")
+  .or("is_paid.eq.false,is_paid.is.false");
+
+
+  const unpaidFinesCount = unpaidFinesRaw ? new Set(unpaidFinesRaw.map(f => f.car_id)).size : 0;
+  const unpaidFines = unpaidFinesRaw ? unpaidFinesRaw.map(f => f.car_id) : [];
+
+// Recupera tutte le auto (serve per il popup)
+const { data: cars, error: carsError } = await supabase.from("cars").select("*");
+if (carsError) throw new Error("Errore nel recupero delle auto per insight");
+
+
+
     res.render("insight", {
       totalCars: totalCount,
       assignedCars: assignedCount,
@@ -489,6 +713,12 @@ const topVendors = Object.values(vendorCountMap).sort((a, b) => b.count - a.coun
       upcomingDeadlines,
       user: req.user,
       topVendors,
+      electricCount,
+      hybridCount,
+      estimatedCO2Saving,
+      unpaidFinesCount,
+      unpaidFines,
+      cars,
     });
   } catch (err) {
     res.send("Errore nel recuperare i dati: " + err.message);
@@ -630,6 +860,17 @@ app.get("/cars/:id", checkAuth, async (req, res) => {
     return res.send("Errore nel recuperare i dettagli dell'auto: " + error.message);
   }
 
+  const { data: carFines, error: finesError } = await supabase
+  .from("fines")
+  .select("*")
+  .eq("car_id", id)
+  .order("uploaded_at", { ascending: false });
+
+if (finesError) {
+  return res.send("Errore nel recuperare i verbali: " + finesError.message);
+}
+
+
   const { data: kmHistory, error: historyError } = await supabase
     .from("car_km_history")
     .select("*")
@@ -662,6 +903,8 @@ app.get("/cars/:id", checkAuth, async (req, res) => {
       vendor = vendorData;
     }
   }
+
+
   
 
   res.render("car_detail", {
@@ -670,6 +913,7 @@ app.get("/cars/:id", checkAuth, async (req, res) => {
     kmHistory,
     driverHistory,
     vendor,
+    carFines,
   });
 });
 // Rotta per mostrare il form di modifica con i dati precompilati
@@ -832,6 +1076,15 @@ app.get("/dashboard", checkAuth, async (req, res) => {
   const { data: cars, error: carsError } = await supabase.from("cars").select("*");
   if (carsError) return res.send("Errore nel recuperare le auto: " + carsError.message);
 
+  // Recupera gli ID delle auto con almeno un verbale non pagato
+const { data: finesData, error: finesError } = await supabase
+.from("fines")
+.select("car_id")
+.eq("is_paid", false);
+
+const unpaidFines = finesData ? finesData.map(f => f.car_id) : [];
+
+
   // Recupero tutti i vendor
   const { data: vendors, error: vendorsError } = await supabase.from("vendors").select("*");
   if (vendorsError) return res.send("Errore nel recuperare i vendor: " + vendorsError.message);
@@ -852,7 +1105,8 @@ app.get("/dashboard", checkAuth, async (req, res) => {
 
   res.render("dashboard", {
     cars: carsWithVendors,
-    user: req.user
+    user: req.user,
+    unpaidFines,
   });
 });
 

@@ -42,29 +42,47 @@
     </div>
   </div>
 
-   <!-- GREEN AREA -->
-   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-    <div class="relative bg-green-950 bg-opacity-90 rounded-2xl p-6 shadow text-white overflow-hidden">
-      <div class="absolute right-6 top-1 text-green-900 text-[90px] opacity-10 pointer-events-none">
-        <i class="fas fa-leaf"></i>
-      </div>
-      <h2 class="text-xl font-bold mb-3">Motorizzazioni Green</h2>
-      <p class="text-lg"><i class="fas fa-bolt mr-2"></i>Auto elettriche: <strong><%= electricCount %></strong></p>
-      <p class="text-lg"><i class="fas fa-recycle mr-2"></i>Auto ibride: <strong><%= hybridCount %></strong></p>
+   <!-- Verbali da Pagare -->
+  <div class="bg-red-900 bg-opacity-80 text-white p-6 rounded-2xl mb-6 shadow relative">
+    <div class="absolute right-3 top-3 text-red-300 text-sm">Aggiornato automaticamente</div>
+    <!-- Immagine di sfondo trasparente -->
+    <div class="absolute inset-0 opacity-5 pointer-events-none">
+      <img src="/uploads/polizia-locale.png" alt="Polizia Locale" class="w-full h-full object-cover object-[center_-350px]">
     </div>
-    <div class="relative bg-emerald-900 bg-opacity-90 rounded-2xl p-6 shadow text-white overflow-hidden">
-      <div class="absolute right-2 top-1 opacity-10 pointer-events-none">
-        <img src="/uploads/co2.png" alt="CO2" class="w-40 h-40 object-contain">
-      </div>
-      <h2 class="text-xl font-bold mb-3">Impatto Ambientale</h2>
-      <p class="text-lg"><i class="fa-solid fa-earth-europe mr-2"></i>Riduzione stimata CO₂: <strong><%= estimatedCO2Saving %> t/anno</strong></p>
-      <p class="text-sm text-emerald-200 mt-1">Basata su 2.1 t CO₂/anno per veicolo green</p>
-      <p class="text-xs text-emerald-300 mt-1">
-        Fonte: <a href="https://www.eea.europa.eu/en/analysis/indicators/co2-performance-emissions-of-new/average-co2-emissions-from-n" target="_blank" class="underline hover:text-white">European Environment Agency</a>
-      </p>
-      
-    </div>
+    <h2 class="text-2xl font-bold mb-2"><i class="fas fa-file-invoice-dollar mr-2"></i> Verbali da Pagare</h2>
+    <p class="text-lg mb-3">
+      Hai <strong><%= typeof unpaidFinesCount !== 'undefined' ? unpaidFinesCount : 0 %></strong> auto con verbali non ancora saldati.
+    </p>
+    <button onclick="openFineModal()" class="inline-block bg-white text-red-900 font-bold px-4 py-2 rounded hover:bg-red-200 transition">
+      Vai alla gestione dei verbali
+    </button>
   </div>
+
+ <!-- GREEN AREA -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+  <div class="relative bg-green-950 bg-opacity-90 rounded-2xl p-6 shadow text-white overflow-hidden">
+    <!-- Immagine di sfondo trasparente -->
+    <div class="absolute inset-0 opacity-5 pointer-events-none">
+      <img src="/uploads/auto-electric.png" alt="Auto Elettrica" class="w-full h-full object-cover">
+    </div>
+    <h2 class="text-xl font-bold mb-3">Motorizzazioni Green</h2>
+    <p class="text-lg"><i class="fas fa-bolt mr-2"></i>Auto elettriche: <strong><%= electricCount %></strong></p>
+    <p class="text-lg"><i class="fa-solid fa-leaf mr-2"></i>Auto ibride: <strong><%= hybridCount %></strong></p>
+  </div>
+
+  <div class="relative bg-emerald-900 bg-opacity-90 rounded-2xl p-6 shadow text-white overflow-hidden">
+    <div class="absolute right-2 top-1 opacity-10 pointer-events-none">
+      <img src="/uploads/co2.png" alt="CO2" class="w-40 h-40 object-contain">
+    </div>
+    <h2 class="text-xl font-bold mb-3">Impatto Ambientale</h2>
+    <p class="text-lg"><i class="fa-solid fa-earth-europe mr-2"></i>Riduzione stimata CO₂: <strong><%= estimatedCO2Saving %> t/anno</strong></p>
+    <p class="text-sm text-emerald-200 mt-1">Basata su 2.1 t CO₂/anno per veicolo green</p>
+    <p class="text-xs text-emerald-300 mt-1">
+      Fonte: <a href="https://www.eea.europa.eu/en/analysis/indicators/co2-performance-emissions-of-new/average-co2-emissions-from-n" target="_blank" class="underline hover:text-white">European Environment Agency</a>
+    </p>
+  </div>
+</div>
+
 
   <!-- Grafico + Classifica -->
   <div class="flex flex-col md:flex-row gap-6 mb-4">
@@ -187,7 +205,80 @@
       </ul>
     <% } %>
   </div>
+  <!-- Popup Verbali da Pagare -->
+<div id="unpaid-fines-modal"
+class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden"
+style="align-items: center; justify-content: center;">
+  <div class="bg-red-900 text-white rounded-2xl shadow-2xl w-[95%] max-w-4xl max-h-[90vh] overflow-hidden">
+    <!-- Header -->
+    <div class="flex justify-between items-center p-4 border-b border-red-700 bg-red-800 bg-opacity-70">
+      <h2 class="text-2xl font-bold">
+        <i class="fas fa-exclamation-triangle mr-2"></i> Auto con verbali attivi
+      </h2>
+      <button onclick="closeFineModal()"
+              class="text-white hover:text-gray-300 text-xl font-bold">
+        &times;
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="overflow-y-auto p-4 max-h-[70vh]">
+      <% 
+        let carsWithUnpaidFines = [];
+        if (typeof cars !== 'undefined' && Array.isArray(cars) && Array.isArray(unpaidFines)) {
+          carsWithUnpaidFines = cars.filter(car => unpaidFines.includes(String(car.id)));
+        }
+      %>
+
+      <% if (carsWithUnpaidFines.length > 0) { %>
+        <table class="w-full text-sm text-left border-separate border-spacing-y-2">
+          <thead class="sticky top-0 bg-red-900 bg-opacity-90 z-10">
+            <tr>
+              <th class="px-4 py-2 font-semibold">Marca</th>
+              <th class="px-4 py-2 font-semibold">Modello</th>
+              <th class="px-4 py-2 font-semibold">Targa</th>
+              <th class="px-4 py-2 font-semibold">Driver</th>
+              <th class="px-4 py-2 font-semibold text-center">Azioni</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% carsWithUnpaidFines.forEach(car => { %>
+              <tr class="bg-red-800 bg-opacity-40 hover:bg-red-700 rounded transition duration-150">
+                <td class="px-4 py-2"><%= car.brand %></td>
+                <td class="px-4 py-2"><%= car.model %></td>
+                <td class="px-4 py-2"><%= car.license_plate %></td>
+                <td class="px-4 py-2"><%= car.assigned_driver || '-' %></td>
+                <td class="px-4 py-2 text-center">
+                  <a href="/cars/<%= car.id %>"
+                     class="bg-white text-red-800 font-semibold px-3 py-1 rounded hover:bg-gray-100 transition">
+                    Gestisci
+                  </a>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <p class="text-center text-lg mt-4">Nessuna auto con verbali attivi al momento.</p>
+      <% } %>
+    </div>
+
+    <!-- Footer -->
+    <div class="flex justify-end items-center px-6 py-3 border-t border-red-800 bg-red-900">
+      <button onclick="closeFineModal()"
+              class="bg-white text-red-800 font-bold py-2 px-4 rounded hover:bg-gray-100 transition">
+        Chiudi
+      </button>
+    </div>
+  </div>
 </div>
+
+
+
+
+</div>
+
+
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -223,5 +314,21 @@
     legendContainer.appendChild(item);
   });
 </script>
+<script>
+  function openFineModal() {
+    const modal = document.getElementById('unpaid-fines-modal');
+    modal.style.display = 'flex';
+    modal.scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeFineModal() {
+    const modal = document.getElementById('unpaid-fines-modal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+  }
+</script>
+
+
 
 <%- include('partials/footer') %>

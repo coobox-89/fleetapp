@@ -112,6 +112,41 @@
         </div>
       </section>
 
+      <!-- Verbali associati -->
+<section class="mt-10">
+  <h2 class="text-2xl font-bold border-b border-gray-600 pb-2 mb-4">Verbali associati</h2>
+
+  <% if (car.fines && car.fines.length > 0) { %>
+    <div class="space-y-4">
+      <% car.fines.forEach(fine => { %>
+        <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+          <p><strong>Data:</strong> <%= new Date(fine.uploaded_at).toLocaleDateString() %></p>
+          <p><strong>Targa:</strong> <%= fine.plate %></p>
+          <p>
+            <a href="<%= fine.file_url %>" target="_blank" class="text-blue-400 underline">📄 Visualizza Verbale</a>
+          </p>
+
+          <% if (fine.is_paid) { %>
+            <p class="mt-2 text-green-400 font-semibold">✅ Pagato il <%= new Date(fine.paid_at).toLocaleDateString() %></p>
+            <p>
+              <a href="<%= fine.receipt_url %>" target="_blank" class="text-blue-400 underline">📎 Ricevuta</a>
+            </p>
+          <% } else { %>
+            <form action="/mark-fine-paid/<%= fine.id %>" method="POST" enctype="multipart/form-data" class="mt-4 space-y-2">
+              <label class="block text-sm">📥 Carica ricevuta pagamento (PDF)</label>
+              <input type="file" name="receipt" accept="application/pdf" required class="block p-2 bg-gray-900 border border-gray-600 text-sm">
+              <button type="submit" class="btn px-3 py-1 text-sm">Segna come pagato</button>
+            </form>
+          <% } %>
+        </div>
+      <% }); %>
+    </div>
+  <% } else { %>
+    <p class="text-gray-400 italic">Nessun verbale caricato per questa auto.</p>
+  <% } %>
+</section>
+
+
       <!-- Sezione Informazioni Aggiuntive -->
       <section>
         <h2 class="text-2xl font-bold border-b border-gray-600 pb-2 mb-4">Informazioni Aggiuntive</h2>
